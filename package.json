@@ -10,7 +10,9 @@
     "url": "git+https://github.com/mdebbar/reshift.git"
   },
   "scripts": {
-    "test": "jest"
+    "test": "jest",
+    "watch": "jest --watch",
+    "debug": "node --debug ./node_modules/.bin/jest -i"
   },
   "dependencies": {
     "recast": "^0.11.18"
