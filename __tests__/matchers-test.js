@@ -63,7 +63,7 @@ test('The "every" matcher works', () => {
       b.property('init', b.identifier('p2'), b.literal(20)),
     ]),
     b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(100)),
+      b.property('init', b.identifier('p3'), b.literal(100)),
     ]),
   ])
 
@@ -85,7 +85,7 @@ test('The "every" matcher works', () => {
       b.property('init', b.identifier('k2'), b.literal(20)),
     ]),
     b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(100)),
+      b.property('init', b.identifier('p3'), b.literal(100)),
     ]),
   ])
 
@@ -93,6 +93,65 @@ test('The "every" matcher works', () => {
     elements: m.every(m.ObjectExpression({
       properties: m.every(m.Property({
         key: m.Identifier({ name: (prop) => prop.startsWith('p') }),
+        value: m.Literal(),
+      })),
+    })),
+  })
+
+  expectNoMatch(matcher3, ast3)
+})
+
+test('The "some" matcher works', () => {
+  // Shallow
+  const ast1 = b.arrayExpression([
+    b.literal(10),
+    b.identifier('y'),
+    b.objectExpression([]),
+  ])
+
+  const matcher1 = m.ArrayExpression({
+    elements: m.some(m.Literal()),
+  })
+
+  expectMatch(matcher1, ast1)
+
+  // Deep & nested
+  const ast2 = b.arrayExpression([
+    b.objectExpression([
+      b.property('init', b.identifier('p1'), b.literal(10)),
+      b.property('init', b.identifier('p2'), b.literal(20)),
+    ]),
+    b.objectExpression([
+      b.property('init', b.identifier('p3'), b.literal(100)),
+    ]),
+  ])
+
+  const matcher2 = m.ArrayExpression({
+    elements: m.some(m.ObjectExpression({
+      properties: m.some(m.Property({
+        key: m.Identifier({ name: 'p2' }),
+        value: m.Literal({ value: 20 }),
+      })),
+    })),
+  })
+
+  expectMatch(matcher2, ast2)
+
+  // Detects non-matches
+  const ast3 = b.arrayExpression([
+    b.objectExpression([
+      b.property('init', b.identifier('p1'), b.literal(10)),
+      b.property('init', b.identifier('k2'), b.literal(20)),
+    ]),
+    b.objectExpression([
+      b.property('init', b.identifier('p1'), b.literal(100)),
+    ]),
+  ])
+
+  const matcher3 = m.ArrayExpression({
+    elements: m.some(m.ObjectExpression({
+      properties: m.some(m.Property({
+        key: m.Identifier({ name: (prop) => prop.startsWith('a') }),
         value: m.Literal(),
       })),
     })),

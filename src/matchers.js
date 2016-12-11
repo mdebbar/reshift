@@ -16,7 +16,7 @@ Object.keys(t).forEach(function createMatcherForType(type) {
   }
 })
 
-// Add a matcher for every array item
+// A matcher for every array item
 m.every = (itemMatcher) => (propArray) => {
   if (!Array.isArray(propArray)) {
     throw 'Trying to use an array matcher on a non-array'
@@ -24,7 +24,15 @@ m.every = (itemMatcher) => (propArray) => {
   return propArray.every((prop) => matchProp(prop, itemMatcher))
 }
 
-// Add an OR matcher
+// A matcher for at least one item in array
+m.some = (itemMatcher) => (propArray) => {
+  if (!Array.isArray(propArray)) {
+    throw 'Trying to use an array matcher on a non-array'
+  }
+  return propArray.some((prop) => matchProp(prop, itemMatcher))
+}
+
+// An OR matcher
 m.or = (...matchers) => (prop) => {
   return matchers.some((matcher) => matchProp(prop, matcher))
 }
