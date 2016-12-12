@@ -2,19 +2,17 @@
  * Implements matchers for boolean operations.
  */
 
-const { matchPattern } = require('./util')
-
 module.exports = {
-  or: (...matchers) => (prop) => {
-    return matchers.some((matcher) => matchPattern(prop, matcher))
+  or: (...matchers) => (prop, matchProp) => {
+    return matchers.some((matcher) => matchProp(prop, matcher))
   },
 
-  and: (...matchers) => (prop) => {
-    return matchers.every((matcher) => matchPattern(prop, matcher))
+  and: (...matchers) => (prop, matchProp) => {
+    return matchers.every((matcher) => matchProp(prop, matcher))
   },
 
-  not: (matcher) => (prop) => {
-    return !matchPattern(prop, matcher)
+  not: (matcher) => (prop, matchProp) => {
+    return !matchProp(prop, matcher)
   },
 
   // TODO: do we need XOR?

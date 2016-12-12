@@ -1,4 +1,6 @@
 const recast = require('recast')
+const types = recast.types
+const matchPattern = require('../traverser2/matchPattern')
 
 function parse(code) {
   const main = recast.parse(code).program.body[0]
@@ -12,12 +14,14 @@ function parse(code) {
 // TODO: Add debugging info when assertion fails.
 function expectMatch(matcher, astOrCode) {
   const ast = (typeof astOrCode === 'string') ? parse(astOrCode) : astOrCode
-  expect(matcher(ast)).toBe(true)
+  const path = new types.NodePath(ast)
+  expect(matchPattern(path, matcher)).toBe(true)
 }
 
 function expectNoMatch(matcher, astOrCode) {
   const ast = (typeof astOrCode === 'string') ? parse(astOrCode) : astOrCode
-  expect(matcher(ast)).toBe(false)
+  const path = new types.NodePath(ast)
+  expect(matchPattern(path, matcher)).toBe(false)
 }
 
 module.exports = { parse, expectMatch, expectNoMatch }

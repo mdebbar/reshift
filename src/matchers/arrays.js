@@ -1,10 +1,10 @@
+const matchPattern = require('../traverser2/matchPattern')
+
 /**
  * Implements matchers for arrays.
  */
-
-const { matchPattern } = require('./util')
-
 module.exports = {
+  // FIX: Pass a path instance to `matchPattern`.
   every: (itemMatcher) => (propArray) => {
     if (!Array.isArray(propArray)) {
       throw 'Trying to use an array matcher on a non-array'

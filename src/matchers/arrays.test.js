@@ -62,6 +62,7 @@ test('`every` matcher works', () => {
     elements: m.every(m.Expression()),
   })
 
+  debugger
   expectMatch(matcher1, '[10, y, {}]')
 
   // Deep & nested
