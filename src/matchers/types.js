@@ -3,15 +3,15 @@
  * at https://github.com/benjamn/ast-types
  */
 
-const t = require('recast/lib/types').namedTypes
+const nt = require('recast/lib/types').namedTypes
 const { matchPattern } = require('./util')
 
 const typeMatchers = {}
 module.exports = typeMatchers
 
-Object.keys(t).forEach(function createMatcherForType(type) {
+Object.keys(nt).forEach(function createMatcherForType(type) {
   typeMatchers[type] = (pattern) => (node) => {
-    if (!t[type].check(node)) {
+    if (!nt[type].check(node)) {
       return false
     }
     if (pattern) {

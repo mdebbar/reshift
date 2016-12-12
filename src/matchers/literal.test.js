@@ -1,44 +1,36 @@
-const b = require('recast/lib/types').builders
 const m = require('./index')
 const { expectMatch, expectNoMatch } = require('./test-helpers')
 
-test('matches literal pattern', () => {
-  // Can do full matching
-  const ast1 = b.assignmentExpression('=', b.identifier('x'), b.literal('abc'))
-
-  const matcher1 = m.AssignmentExpression({
+test('full matching of literal patterns', () => {
+  const matcher = m.AssignmentExpression({
     operator: '=',
     left: m.Identifier({ name: 'x' }),
     right: m.Literal({ value: 'abc' }),
   })
 
-  expectMatch(matcher1, ast1)
+  expectMatch(matcher, 'x = "abc"')
+})
 
-  // Can do partial matching
-  const ast2 = b.assignmentExpression('=', b.identifier('x'), b.literal('abc'))
-
-  const matcher2 = m.AssignmentExpression({
+test('partial matching of literal patterns', () => {
+  const matcher = m.AssignmentExpression({
     operator: '=',
     right: m.Literal({ value: 'abc' }),
   })
 
-  expectMatch(matcher2, ast2)
+  expectMatch(matcher, 'y = "abc"')
+})
 
-  // Can detect non-match from shallow property
-  const ast3 = b.assignmentExpression('+=', b.identifier('x'), b.literal('abc'))
+test('detect shallow non-match', () => {
+  const matcher = m.AssignmentExpression({ operator: '=' })
+  expectNoMatch(matcher, 'x += "abc"')
+})
 
-  const matcher3 = m.AssignmentExpression({ operator: '=' })
-
-  expectNoMatch(matcher3, ast3)
-
-  // Can detect non-match from deep property
-  const ast4 = b.assignmentExpression('=', b.identifier('y'), b.literal('abc'))
-
-  const matcher4 = m.AssignmentExpression({
+test('detect deep non-match', () => {
+  const matcher = m.AssignmentExpression({
     operator: '=',
     left: m.Identifier({ name: 'x' }),
     right: m.Literal({ value: 'abc' }),
   })
 
-  expectNoMatch(matcher4, ast4)
+  expectNoMatch(matcher, 'y = "abc"')
 })

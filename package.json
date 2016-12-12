@@ -12,7 +12,8 @@
   "scripts": {
     "test": "jest",
     "watch": "jest --watch",
-    "debug": "node --inspect --debug-brk ./node_modules/.bin/jest -i"
+    "debug": "node --inspect --debug-brk ./node_modules/.bin/jest -i",
+    "wc": "find src/ -name '*.js' -not -name '*.test.js' -not -name 'test-*' | xargs wc -l"
   },
   "dependencies": {
     "recast": "^0.11.18"

@@ -1,142 +1,70 @@
-const b = require('recast/lib/types').builders
 const m = require('./index')
 const { expectMatch, expectNoMatch } = require('./test-helpers')
 
 test('matches array\'s `length`', () => {
-  const ast1 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('y'),
-    b.arrayExpression([]),
-  ])
-  const ast2 = b.callExpression(b.identifier('fn'), [])
-  const ast3 = b.callExpression(b.identifier('fn'), [b.literal(10), b.identifier('y')])
-
+  // Matches function calls with 3 arguments.
   const matcher = m.CallExpression({
     arguments: { length: 3 },
   })
 
-  expectMatch(matcher, ast1)
-  expectNoMatch(matcher, ast2)
-  expectNoMatch(matcher, ast3)
+  expectMatch(matcher, 'fn(10, y, [])')
+  expectNoMatch(matcher, 'fn()')
+  expectNoMatch(matcher, 'fn(10, y)')
 })
 
 test('matches array pattern', () => {
-  const ast1 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('y'),
-    b.arrayExpression([]),
-  ])
-  const ast2 = b.callExpression(b.identifier('fn'), [
-    b.identifier('y'),
-    b.literal(10),
-    b.arrayExpression([]),
-  ])
-  const ast3 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('y'),
-  ])
-
   const matcher = m.CallExpression({
     arguments: [m.Literal(), m.Identifier(), m.ArrayExpression()],
   })
 
-  expectMatch(matcher, ast1)
-  expectNoMatch(matcher, ast2)
-  expectNoMatch(matcher, ast3)
+  expectMatch(matcher, 'fn(10, y, [])')
+  expectNoMatch(matcher, 'fn(y, 10, [])')
+  expectNoMatch(matcher, 'fn(10, y)')
 })
 
 test('matches partial array pattern', () => {
-  const ast1 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('x'),
-    b.arrayExpression([]),
-  ])
-  const ast2 = b.callExpression(b.identifier('fn'), [b.literal(10), b.identifier('y')])
-  const ast3 = b.callExpression(b.identifier('fn'), [b.identifier('y'), b.literal(10)])
-  const ast4 = b.callExpression(b.identifier('fn'), [b.literal(10), b.literal(10), b.identifier('y')])
-
   const matcher = m.CallExpression({
     arguments: [m.Literal({ value: 10 }), m.Identifier()],
   })
 
-  expectMatch(matcher, ast1)
-  expectMatch(matcher, ast2)
-  expectNoMatch(matcher, ast3)
-  expectNoMatch(matcher, ast4)
+  expectMatch(matcher, 'fn(10, x, [])')
+  expectMatch(matcher, 'fn(10, y)')
+  expectNoMatch(matcher, 'fn(y, 10)')
+  expectNoMatch(matcher, 'fn(10, 10, y)')
 })
 
 test('matches nested array patterns', () => {
-  const ast1 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('y'),
-    b.arrayExpression([b.objectExpression([]), b.objectExpression([])]),
-  ])
-  const ast2 = b.callExpression(b.identifier('fn'), [
-    b.identifier('y'),
-    b.literal(10),
-    b.arrayExpression([b.objectExpression([])]),
-  ])
-  const ast3 = b.callExpression(b.identifier('fn'), [
-    b.identifier('y'),
-    b.literal(10),
-    b.arrayExpression([b.objectExpression([]), b.literal(20)]),
-  ])
-
   const matcher = m.CallExpression({
     arguments: [m.Literal(), m.Identifier(), m.ArrayExpression({
       elements: [m.ObjectExpression(), m.ObjectExpression()],
     })],
   })
 
-  expectMatch(matcher, ast1)
-  expectNoMatch(matcher, ast2)
-  expectNoMatch(matcher, ast3)
+  expectMatch(matcher, 'fn(10, y, [{}, {}])')
+  expectNoMatch(matcher, 'fn(y, 10, [{}])')
+  expectNoMatch(matcher, 'fn(y, 10, [{}, 20])')
 })
 
 test('matches nth item in array', () => {
-  const ast1 = b.callExpression(b.identifier('fn'), [
-    b.literal(10),
-    b.identifier('x'),
-    b.arrayExpression([]),
-  ])
-  const ast2 = b.callExpression(b.identifier('fn'), [b.literal(10), b.identifier('x'), b.objectExpression([])])
-  const ast3 = b.callExpression(b.identifier('fn'), [b.literal(10), b.identifier('x')])
-
   // Matches a call expression with the 3rd argument being an array expression.
   const matcher = m.CallExpression({
     arguments: { 2: m.ArrayExpression() },
   })
 
-  expectMatch(matcher, ast1)
-  expectNoMatch(matcher, ast2)
-  expectNoMatch(matcher, ast3)
+  expectMatch(matcher, 'fn(10, x, [])')
+  expectNoMatch(matcher, 'fn(10, x, {})')
+  expectNoMatch(matcher, 'fn(10, x)')
 })
 
 test('`every` matcher works', () => {
   // Shallow
-  const ast1 = b.arrayExpression([
-    b.literal(10),
-    b.identifier('y'),
-    b.objectExpression([]),
-  ])
-
   const matcher1 = m.ArrayExpression({
     elements: m.every(m.Expression()),
   })
 
-  expectMatch(matcher1, ast1)
+  expectMatch(matcher1, '[10, y, {}]')
 
   // Deep & nested
-  const ast2 = b.arrayExpression([
-    b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(10)),
-      b.property('init', b.identifier('p2'), b.literal(20)),
-    ]),
-    b.objectExpression([
-      b.property('init', b.identifier('p3'), b.literal(100)),
-    ]),
-  ])
-
   const matcher2 = m.ArrayExpression({
     elements: m.every(m.ObjectExpression({
       properties: m.every(m.Property({
@@ -146,19 +74,9 @@ test('`every` matcher works', () => {
     })),
   })
 
-  expectMatch(matcher2, ast2)
+  expectMatch(matcher2, '[{ p1: 10, p2: 20 }, { p3: 100 }]')
 
   // Detects non-matches
-  const ast3 = b.arrayExpression([
-    b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(10)),
-      b.property('init', b.identifier('k2'), b.literal(20)),
-    ]),
-    b.objectExpression([
-      b.property('init', b.identifier('p3'), b.literal(100)),
-    ]),
-  ])
-
   const matcher3 = m.ArrayExpression({
     elements: m.every(m.ObjectExpression({
       properties: m.every(m.Property({
@@ -168,34 +86,18 @@ test('`every` matcher works', () => {
     })),
   })
 
-  expectNoMatch(matcher3, ast3)
+  expectNoMatch(matcher3, '[{ p1: 10, k2: 20 }, { p3: 100 }]')
 })
 
 test('`some` matcher works', () => {
   // Shallow
-  const ast1 = b.arrayExpression([
-    b.literal(10),
-    b.identifier('y'),
-    b.objectExpression([]),
-  ])
-
   const matcher1 = m.ArrayExpression({
     elements: m.some(m.Literal()),
   })
 
-  expectMatch(matcher1, ast1)
+  expectMatch(matcher1, '[10, y, {}]')
 
   // Deep & nested
-  const ast2 = b.arrayExpression([
-    b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(10)),
-      b.property('init', b.identifier('p2'), b.literal(20)),
-    ]),
-    b.objectExpression([
-      b.property('init', b.identifier('p3'), b.literal(100)),
-    ]),
-  ])
-
   const matcher2 = m.ArrayExpression({
     elements: m.some(m.ObjectExpression({
       properties: m.some(m.Property({
@@ -205,19 +107,9 @@ test('`some` matcher works', () => {
     })),
   })
 
-  expectMatch(matcher2, ast2)
+  expectMatch(matcher2, '[{ p1: 10, p2: 20 }, { p3: 100 }]')
 
   // Detects non-matches
-  const ast3 = b.arrayExpression([
-    b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(10)),
-      b.property('init', b.identifier('k2'), b.literal(20)),
-    ]),
-    b.objectExpression([
-      b.property('init', b.identifier('p1'), b.literal(100)),
-    ]),
-  ])
-
   const matcher3 = m.ArrayExpression({
     elements: m.some(m.ObjectExpression({
       properties: m.some(m.Property({
@@ -227,5 +119,5 @@ test('`some` matcher works', () => {
     })),
   })
 
-  expectNoMatch(matcher3, ast3)
+  expectNoMatch(matcher3, '[{ p1: 10, k2: 20 }, { p1: 100 }]')
 })
