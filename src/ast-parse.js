@@ -29,8 +29,7 @@ function parseAsPartial(source) {
   if (Array.isArray(partial)) {
     if (partial.length === 0) {
       partial = null
-    }
-    if (partial.length === 1) {
+    } else if (partial.length === 1) {
       partial = partial[0]
     }
   }

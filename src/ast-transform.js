@@ -16,6 +16,11 @@ function applyTransform(path, capturedInfo, transform) {
 function applyTemplateTransform(path, capturedInfo, template) {
   const parsedTemplate = parseAsPartial(template)
   insertCapturedInfo(parsedTemplate, capturedInfo)
+  // If the matched node is wrapped in an ExpressionStatement, we should replace the whole statement.
+  if (namedTypes.ExpressionStatement.check(path.parentPath.value) &&
+      !namedTypes.Expression.check(parsedTemplate)) {
+    path = path.parentPath
+  }
   path.replace(parsedTemplate)
 }
 

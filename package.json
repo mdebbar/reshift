@@ -23,5 +23,10 @@
     "babel-jest": "^17.0.2",
     "eslint": "^3.12.0",
     "jest": "^17.0.3"
+  },
+  "jest": {
+    "testPathDirs": [
+      "src"
+    ]
   }
 }
