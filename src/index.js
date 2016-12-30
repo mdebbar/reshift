@@ -1,5 +1,6 @@
 require('./def/capture')
 
+const assert = require('assert')
 const { parse, parseAsPartial } = require('./ast-parse')
 const { print } = require('./ast-print')
 const { matchSubTree } = require('./ast-matching')
@@ -8,38 +9,39 @@ const { applyTransform } = require('./ast-transform')
 class ReShift {
   constructor(source) {
     this.ast = parse(source)
-    this.capturedMatches = null
+    this.transformations = []
   }
 
-  capture(template) {
-    const captureTree = parseAsPartial(template)
-    this.capturedMatches = matchSubTree(this.ast, captureTree)
-    return this
-  }
-
-  filter(fn, ctxt) {
-    if (!this.capturedMatches) {
-      throw 'You have to capture something before you can filter it'
-    }
-
-    this.capturedMatches = this.capturedMatches.filter(
-      ({ path, capturedInfo }) => fn.call(ctxt, path, capturedInfo)
+  add({ capture, transform, filter }) {
+    assert(
+      typeof capture === 'string',
+      `Expecting 'capture' of type string, got ${typeof capture}`
     )
+    assert(
+      typeof transform === 'string' || typeof transform === 'function',
+      `Expecting 'transform' of type string or function, got ${typeof transform}`
+    )
+    assert(
+      typeof filter === 'undefined' || typeof filter === 'function',
+      `Expecting 'filter' of type function, got ${typeof filter}`
+    )
+    this.transformations.push({ capture, transform, filter })
     return this
   }
 
-  transformInto(template) {
-    if (!this.capturedMatches) {
-      throw 'You have to capture something before you can transform it'
+  applyTransformation({ capture, transform, filter }) {
+    const captureTree = parseAsPartial(capture)
+    let matches = matchSubTree(this.ast, captureTree)
+    if (filter) {
+      matches = matches.filter(({ path, capturedInfo }) => filter(path, capturedInfo))
     }
-
-    this.capturedMatches.forEach(
-      ({ path, capturedInfo}) => applyTransform(path, capturedInfo, template)
-    )
-    return this
+    matches.forEach(({ path, capturedInfo }) => applyTransform(path, capturedInfo, transform))
   }
 
   toSource(options) {
+    if (this.transformations.length > 0) {
+      this.transformations.forEach(this.applyTransformation, this)
+    }
     return print(this.ast, options)
   }
 

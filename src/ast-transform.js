@@ -3,14 +3,10 @@ const { parseAsPartial } = require('./ast-parse')
 const { preOrder } = require('./ast-traverse')
 
 function applyTransform(path, capturedInfo, transform) {
-  const type = typeof transform
-  if (type === 'string') {
-    applyTemplateTransform(path, capturedInfo, transform)
-  } else if (type === 'function') {
-    // TODO: implement
-  } else {
-    throw `ReShift.transformInto() expects a string or function, got ${type} instead.`
+  if (typeof transform === 'function') {
+    transform = transform(path, capturedInfo)
   }
+  applyTemplateTransform(path, capturedInfo, transform)
 }
 
 function applyTemplateTransform(path, capturedInfo, template) {
