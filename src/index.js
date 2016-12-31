@@ -3,7 +3,7 @@ require('./def/capture')
 const assert = require('assert')
 const { parse, parseAsPartial } = require('./ast-parse')
 const { print } = require('./ast-print')
-const { matchSubTree } = require('./ast-matching')
+const { createSubTreeMatcher } = require('./ast-matching')
 const { applyTransform } = require('./ast-transform')
 
 class ReShift {
@@ -12,7 +12,7 @@ class ReShift {
     this.transformations = []
   }
 
-  add({ capture, transform, filter }) {
+  add({ capture, transform, filter = () => true }) {
     assert(
       typeof capture === 'string',
       `Expecting 'capture' of type string, got ${typeof capture}`
@@ -22,26 +22,36 @@ class ReShift {
       `Expecting 'transform' of type string or function, got ${typeof transform}`
     )
     assert(
-      typeof filter === 'undefined' || typeof filter === 'function',
+      typeof filter === 'function',
       `Expecting 'filter' of type function, got ${typeof filter}`
     )
     this.transformations.push({ capture, transform, filter })
     return this
   }
 
-  applyTransformation({ capture, transform, filter }) {
-    const captureTree = parseAsPartial(capture)
-    let matches = matchSubTree(this.ast, captureTree)
-    if (filter) {
-      matches = matches.filter(({ path, capturedInfo }) => filter(path, capturedInfo))
+  applyTransformations() {
+    const captureTrees = this.transformations.map(t => parseAsPartial(t.capture))
+    const matchInSubTree = createSubTreeMatcher(this.ast, captureTrees)
+
+    // `trees` holds all AST trees that still need to be considered for transformation.
+    // Initially, it's the whole AST of the source. Subsequently, whenever a subtree is
+    // transformed, we need to append it to this list to potentially apply other transforms on it.
+    const trees = [this.ast]
+    while (trees.length > 0) {
+      const subtree = trees.shift()
+      matchInSubTree(subtree, (path, capturedInfo, i) => {
+        const { filter, transform } = this.transformations[i]
+        if (filter(path, capturedInfo)) {
+          // TODO: [optimization] pre-parse `transform` so we don't have to re-parse it!
+          applyTransform(path, capturedInfo, transform)
+          trees.push(path.node)
+        }
+      })
     }
-    matches.forEach(({ path, capturedInfo }) => applyTransform(path, capturedInfo, transform))
   }
 
   toSource(options) {
-    if (this.transformations.length > 0) {
-      this.transformations.forEach(this.applyTransformation, this)
-    }
+    this.applyTransformations()
     return print(this.ast, options)
   }
 

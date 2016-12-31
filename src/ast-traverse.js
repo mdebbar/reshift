@@ -1,6 +1,5 @@
 const types = require('recast/lib/types')
 
-// TODO: Provide a way to skip traversing sub-tree (e.g. callback returns false)
 function preOrder(ast, callback) {
   types.visit(ast, {
     visitNode: function visitNode(path) {
@@ -20,5 +19,27 @@ function postOrder(ast, callback) {
   })
 }
 
+/**
+ * Post-order traversal of a subtree inside an AST.
+ */
+function postOrderSubtree(ast, subtree, callback) {
+  let insideSubtree = false
+  types.visit(ast, {
+    visitNode: function visitNode(path) {
+      const thisIsSubtree = path.node === subtree
+      if (thisIsSubtree) {
+        insideSubtree = true
+      }
+      this.traverse(path)
+      if (insideSubtree) {
+        callback(path)
+      }
+      if (thisIsSubtree) {
+        insideSubtree = false
+      }
+    },
+  })
+}
 
-module.exports = { preOrder, postOrder }
+
+module.exports = { preOrder, postOrder, postOrderSubtree }

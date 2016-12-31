@@ -1,20 +1,19 @@
 const types = require('recast/lib/types')
 const { namedTypes } = types
-const { postOrder } = require('./ast-traverse')
+const { postOrderSubtree } = require('./ast-traverse')
 
-/**
- * Inside the `ast`, find all matches to `subtree`. The traversal is post-order
- * so inner nodes are matched first.
- */
-function matchSubTree(ast, subtree) {
-  const matches = []
-  postOrder(ast, function matchSubTreeVisitor(path) {
-    let capturedInfo
-    if ((capturedInfo = compareAndCapture(path, subtree))) {
-      matches.push({ path, capturedInfo })
-    }
-  })
-  return matches
+function createSubTreeMatcher(ast, captureTrees) {
+  return function matchInSubTree(subtree, callback) {
+    postOrderSubtree(ast, subtree, function matchInSubTreeVisitor(path) {
+      for (let i = 0; i < captureTrees.length; i++) {
+        const capturedInfo = compareAndCapture(path, captureTrees[i])
+        if (capturedInfo) {
+          callback(path, capturedInfo, i)
+          break
+        }
+      }
+    })
+  }
 }
 
 /**
@@ -51,4 +50,4 @@ function compareAndCapture(path, subtree) {
   return capturedInfo
 }
 
-module.exports = { matchSubTree }
+module.exports = { createSubTreeMatcher }

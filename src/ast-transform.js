@@ -5,6 +5,9 @@ const { preOrder } = require('./ast-traverse')
 function applyTransform(path, capturedInfo, transform) {
   if (typeof transform === 'function') {
     transform = transform(path, capturedInfo)
+    if (typeof transform === 'undefined') {
+      return
+    }
   }
   applyTemplateTransform(path, capturedInfo, transform)
 }
@@ -21,6 +24,7 @@ function applyTemplateTransform(path, capturedInfo, template) {
 }
 
 function insertCapturedInfo(ast, info) {
+  // TODO: [optimization] use `type.visit(ast, { visitCapture() {...} })`
   preOrder(ast, function insertCapturedInfoVisitor(path) {
     if (namedTypes.Capture.check(path.node)) {
       const { name } = path.node
