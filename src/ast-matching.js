@@ -9,7 +9,7 @@ function createSubTreeMatcher(ast, captureTrees) {
         const capturedInfo = compareAndCapture(path, captureTrees[i])
         if (capturedInfo) {
           callback(path, capturedInfo, i)
-          break
+          break // from the for-loop
         }
       }
     })
@@ -35,6 +35,7 @@ function compareAndCapture(path, subtree) {
     const { value } = path
 
     if (namedTypes.Capture.check(subtree)) {
+      // TODO: if 2 captures have the same name, we should check if they are equal.
       capturedInfo[subtree.name] = value
     } else if (typeof value === 'object' &&
                typeof subtree === 'object' &&

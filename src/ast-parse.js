@@ -1,29 +1,35 @@
 const recast = require('recast')
 const babylon = require('babylon')
 
+const { namedTypes } = recast.types
+
 const BABYLON_CAPTURE_OPTIONS = {
   allowReturnOutsideFunction: true,
   plugins: ['capture'],
 }
 
-// A parser that passes the correct options to babylon.
-const captureParser = {
+const createBabylonParser = (options) => ({
   parse(source) {
-    return babylon.parse(source, BABYLON_CAPTURE_OPTIONS)
+    return babylon.parse(source, options)
   },
-}
+})
 
-const RECAST_CAPTURE_OPTIONS = {
-  parser: captureParser,
-}
+// TODO: maybe use the 'flow' and 'jsx' plugins by default?
+const normalParser = createBabylonParser()
+const captureParser = createBabylonParser(BABYLON_CAPTURE_OPTIONS)
 
+
+function _parse(source, ...options) {
+  const finalOptions = (options.length === 1) ? options[0] : Object.assign({}, ...options)
+  return recast.parse(source, finalOptions)
+}
 
 function parse(source, options) {
-  return recast.parse(source, options)
+  return _parse(source, { parser: normalParser }, options)
 }
 
-function parseAsPartial(source) {
-  const { program } = parse(source, RECAST_CAPTURE_OPTIONS)
+function parseAsPartial(source, options) {
+  const { program } = _parse(source, { parser: captureParser }, options)
 
   let partial = program.body
   if (Array.isArray(partial)) {
@@ -34,8 +40,8 @@ function parseAsPartial(source) {
     }
   }
 
-  // Remove any wrapper expression statements.
-  if (partial && partial.type === 'ExpressionStatement') {
+  // Remove any wrapper ExpressionStatement's.
+  if (partial && namedTypes.ExpressionStatement.check(partial)) {
     partial = partial.expression
   }
   return partial

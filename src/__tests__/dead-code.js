@@ -1,4 +1,5 @@
 require('../test-helpers/expect-code-equality')
+const { namedTypes } = require('recast/lib/types')
 const reShift = require('..')
 
 test('remove if-statement when its test is falsey', () => {
@@ -33,7 +34,7 @@ test('remove if-statement when its test is falsey', () => {
       //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
       capture  : 'if ( {{test}} ) { {{...body}} }',
       transform: '',
-      filter: (path, captured) => captured.test.type === 'Literal' && !captured.test.value,
+      filter: (path, captured) => namedTypes.Literal.check(captured.test) && !captured.test.value,
     }).toSource()
   expect(transformed).toEqualCode(expected)
 })

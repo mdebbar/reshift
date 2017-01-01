@@ -4,10 +4,10 @@ const reShift = require('..')
 
 test('pre-calculate additions', () => {
   const code = `
-    fn(5 + 2 + 1 + 10, 8 + x)
+    fn(5 + 2 + 1 + 10, 7 + 8 + x)
   `
   const expected = `
-    fn(18, 8 + x)
+    fn(18, 15 + x)
   `
 
   const transformed =
@@ -24,16 +24,14 @@ test('pre-calculate additions', () => {
 
 test('pre-calculate additions/subtractions/multiplication/division', () => {
   const code = `
-    fn((6 / 2 + 4 - 1) * 10, 8 + x)
+    fn((6 / 2 + 4 - 1) * 10, 4 + 3 - 2 * x)
   `
   const expected = `
-    fn(60, 8 + x)
+    fn(60, 7 - 2 * x)
   `
 
-  const filter = (path, captured) =>
-    namedTypes.Literal.check(captured.x) && namedTypes.Literal.check(captured.y) &&
-    typeof captured.x.value === 'number' &&
-    typeof captured.y.value === 'number'
+  const filter =
+    (path, captured) => namedTypes.NumericLiteral.check(captured.x) && namedTypes.NumericLiteral.check(captured.y)
 
   const transformed =
     reShift(code).add({
