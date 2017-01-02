@@ -1,35 +1,27 @@
-const recast = require('recast')
 const babylon = require('babylon')
+const { namedTypes } = require('recast/lib/types')
 
-const { namedTypes } = recast.types
+const BABYLON_OPTIONS = {
+  plugins: ['flow', 'jsx'],
+}
 
 const BABYLON_CAPTURE_OPTIONS = {
   allowReturnOutsideFunction: true,
   plugins: ['capture'],
 }
 
-const createBabylonParser = (options) => ({
-  parse(source) {
-    return babylon.parse(source, options)
-  },
-})
-
-// TODO: maybe use the 'flow' and 'jsx' plugins by default?
-const normalParser = createBabylonParser()
-const captureParser = createBabylonParser(BABYLON_CAPTURE_OPTIONS)
-
 
 function _parse(source, ...options) {
   const finalOptions = (options.length === 1) ? options[0] : Object.assign({}, ...options)
-  return recast.parse(source, finalOptions)
+  return babylon.parse(source, finalOptions)
 }
 
 function parse(source, options) {
-  return _parse(source, { parser: normalParser }, options)
+  return _parse(source, BABYLON_OPTIONS, options)
 }
 
 function parseAsPartial(source, options) {
-  const { program } = _parse(source, { parser: captureParser }, options)
+  const { program } = _parse(source, BABYLON_CAPTURE_OPTIONS, options)
 
   let partial = program.body
   if (Array.isArray(partial)) {
