@@ -13,11 +13,10 @@ test('pre-calculate additions', () => {
   const transformed =
     reShift(code).add({
       capture: '{{x}} + {{y}}',
-      transform: (path, captured) => `${captured.x.value + captured.y.value}`,
+      transform: (util, captured) => util.replace(`${captured.x.value + captured.y.value}`),
       filter: (path, captured) =>
-        namedTypes.Literal.check(captured.x) && namedTypes.Literal.check(captured.y) &&
-        typeof captured.x.value === 'number' &&
-        typeof captured.y.value === 'number',
+        namedTypes.NumericLiteral.check(captured.x) &&
+        namedTypes.NumericLiteral.check(captured.y),
     }).toSource()
   expect(transformed).toEqualCode(expected)
 })
@@ -30,25 +29,26 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
     fn(60, 7 - 2 * x)
   `
 
-  const filter =
-    (path, captured) => namedTypes.NumericLiteral.check(captured.x) && namedTypes.NumericLiteral.check(captured.y)
+  const filter = (path, captured) =>
+    namedTypes.NumericLiteral.check(captured.x) &&
+    namedTypes.NumericLiteral.check(captured.y)
 
   const transformed =
     reShift(code).add({
       capture: '{{x}} + {{y}}',
-      transform: (path, captured) => `${captured.x.value + captured.y.value}`,
+      transform: (util, captured) => util.replace(`${captured.x.value + captured.y.value}`),
       filter: filter,
     }).add({
       capture: '{{x}} - {{y}}',
-      transform: (path, captured) => `${captured.x.value - captured.y.value}`,
+      transform: (util, captured) => util.replace(`${captured.x.value - captured.y.value}`),
       filter: filter,
     }).add({
       capture: '{{x}} * {{y}}',
-      transform: (path, captured) => `${captured.x.value * captured.y.value}`,
+      transform: (util, captured) => util.replace(`${captured.x.value * captured.y.value}`),
       filter: filter,
     }).add({
       capture: '{{x}} / {{y}}',
-      transform: (path, captured) => `${captured.x.value / captured.y.value}`,
+      transform: (util, captured) => util.replace(`${captured.x.value / captured.y.value}`),
       filter: filter,
     }).toSource()
   expect(transformed).toEqualCode(expected)
@@ -56,16 +56,16 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
 
 test('pre-calculate string concatenations', () => {
   const code = `
-    var str = 'abc' + fn('def' + 'ge' + 'pqrst')
+    var str = "ab" + "c" + fn("def" + "ge" + "pqrst")
   `
   const expected = `
-    var str = 'abc' + fn('defgepqrst')
+    var str = "abc" + fn("defgepqrst")
   `
 
   const transformed =
     reShift(code).add({
       capture: '{{x}} + {{y}}',
-      transform: (path, captured) => `('${captured.x.value + captured.y.value}')`,
+      transform: (util, captured) => util.replace(`('${captured.x.value + captured.y.value}')`),
       filter: (path, captured) =>
         namedTypes.Literal.check(captured.x) && namedTypes.Literal.check(captured.y) &&
         typeof captured.x.value === 'string' &&

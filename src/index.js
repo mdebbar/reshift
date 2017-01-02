@@ -4,7 +4,7 @@ const assert = require('assert')
 const { parse, parseAsPartial } = require('./ast-parse')
 const { print } = require('./ast-print')
 const { createSubTreeMatcher } = require('./ast-matching')
-const { applyTransform } = require('./ast-transform')
+const { applyTransform, normalizeTransform } = require('./ast-transform')
 
 class ReShift {
   constructor(source) {
@@ -25,6 +25,7 @@ class ReShift {
       typeof filter === 'function',
       `Expecting 'filter' of type function, got ${typeof filter}`
     )
+    transform = normalizeTransform(transform)
     this.transformations.push({ capture, transform, filter })
     return this
   }
@@ -42,7 +43,6 @@ class ReShift {
       matchInSubTree(subtree, (path, capturedInfo, i) => {
         const { filter, transform } = this.transformations[i]
         if (filter(path, capturedInfo)) {
-          // TODO: [optimization] pre-parse `transform` so we don't have to re-parse it!
           applyTransform(path, capturedInfo, transform)
           trees.push(path.node)
         }

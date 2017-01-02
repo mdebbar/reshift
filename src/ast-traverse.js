@@ -1,13 +1,19 @@
 const types = require('recast/lib/types')
 
-function preOrder(ast, callback) {
+// TODO: [optimization] write an iterative implementation for traversal.
+
+function preOrderWithType(ast, type, callback) {
   types.visit(ast, {
-    visitNode: function visitNode(path) {
+    [`visit${type}`]: function visitNode(path) {
       if (callback(path) !== false) {
         this.traverse(path)
       }
     },
   })
+}
+
+function preOrder(ast, callback) {
+  preOrderWithType(ast, 'Node', callback)
 }
 
 function postOrder(ast, callback) {
@@ -42,4 +48,4 @@ function postOrderSubtree(ast, subtree, callback) {
 }
 
 
-module.exports = { preOrder, postOrder, postOrderSubtree }
+module.exports = { preOrder, preOrderWithType, postOrder, postOrderSubtree }
