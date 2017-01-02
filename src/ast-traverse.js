@@ -1,21 +1,46 @@
 const types = require('recast/lib/types')
-
-// TODO: [optimization] write an iterative implementation for traversal.
+const { namedTypes: n, NodePath } = types
 
 function preOrderWithType(ast, type, callback) {
-  types.visit(ast, {
-    [`visit${type}`]: function visitNode(path) {
-      if (callback(path) !== false) {
-        this.traverse(path)
+  // https://github.com/benjamn/ast-types/blob/d3b32/lib/path-visitor.js#L126
+  const rootPath = new NodePath({ root: ast }).get('root')
+  const queue = [rootPath]
+
+  while (queue.length > 0) {
+    const path = queue.shift()
+    let continueTraversal = true
+
+    // If this is a node of requested type, visit it!
+    if (n[type].check(path.value)) {
+      continueTraversal = callback(path)
+    }
+
+    if (!path.value || typeof path.value !== 'object' || continueTraversal === false) {
+      continue
+    }
+
+    // Continue traversing child nodes
+    if (Array.isArray(path.value)) {
+      for (let i = 0; i < path.value.length; i++) {
+        const childPath = path.get(i)
+        queue.push(childPath)
       }
-    },
-  })
+    } else {
+      const fieldNames = types.getFieldNames(path.value)
+      for (let i = 0; i < fieldNames.length; i++) {
+        const name = fieldNames[i]
+        const childPath = path.get(name)
+        queue.push(childPath)
+      }
+    }
+  }
 }
 
 function preOrder(ast, callback) {
   preOrderWithType(ast, 'Node', callback)
 }
 
+// TODO: [optimization] write an iterative post-order traversal.
 function postOrder(ast, callback) {
   types.visit(ast, {
     visitNode: function visitNode(path) {
