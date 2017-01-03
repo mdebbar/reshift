@@ -1,5 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const reShift = require('..')
+const { run, reShift } = require('..')
 
 test('convert to arrow functions and remove bind(this) and block', () => {
   const code = `
@@ -19,16 +19,17 @@ test('convert to arrow functions and remove bind(this) and block', () => {
     };
   `
 
-  const transformed =
-    reShift(code).add({
+  const shifter = (source) =>
+    reShift(source, {
       capture: '(function( {{...params}} ) { {{...body}} })',
       transform: '( {{...params}} ) => { {{...body}} }',
-    }).add({
+    }, {
       capture: '(( {{...params}} ) => { {{...body}} }).bind(this)',
       transform: '( {{...params}} ) => { {{...body}} }',
-    }).add({
+    }, {
       capture: '(( {{...params}} ) => { return {{retExpr}} })',
       transform: '(( {{...params}} ) => {{retExpr}})',
-    }).toSource()
+    })
+  const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

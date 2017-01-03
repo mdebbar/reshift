@@ -1,6 +1,6 @@
 require('../test-helpers/expect-code-equality')
 const { namedTypes } = require('recast/lib/types')
-const reShift = require('..')
+const { run, reShift } = require('..')
 
 test('remove if-statement when its test is falsey', () => {
   const code = `
@@ -29,13 +29,14 @@ test('remove if-statement when its test is falsey', () => {
     }
   `
 
-  const transformed =
-    reShift(code).add({
+  const shifter = (source) =>
+    reShift(source, {
       //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
       capture  : 'if ( {{test}} ) { {{...body}} }',
       transform: '',
       filter: (path, captured) => namedTypes.Literal.check(captured.test) && !captured.test.value,
-    }).toSource()
+    })
+  const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -54,11 +55,12 @@ test('remove array.forEach() when its callback is empty', () => {
     }
   `
 
-  const transformed =
-    reShift(code).add({
+  const shifter = (source) =>
+    reShift(source, {
       capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
       transform: '',
       filter: (path, captured) => captured.body.length === 0,
-    }).toSource()
+    })
+  const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

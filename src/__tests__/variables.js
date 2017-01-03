@@ -1,5 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const reShift = require('..')
+const { run, reShift } = require('..')
 
 test('remove unused variables', () => {
 

@@ -1,5 +1,3 @@
-const { types } = require('recast')
-
 function deepCopy(ast) {
   if (!ast || typeof ast !== 'object') {
     return ast
@@ -9,14 +7,15 @@ function deepCopy(ast) {
   const toCopy = [{ src: ast, dest: newAst }]
   while (toCopy.length > 0) {
     const { src, dest } = toCopy.shift()
-    const fieldNames = types.getFieldNames(src)
-    for (let i = 0; i < fieldNames.length; i++) {
-      const name = fieldNames[i]
+    for (const name in src) {
+      if (!src.hasOwnProperty(name)) {
+        continue
+      }
       const value = src[name]
-      if (value && typeof value === 'object') {
+      if (value && typeof value === 'object' && name !== 'loc') {
         dest[name] = Array.isArray(value) ? [] : {}
         toCopy.push({ src: value, dest: dest[name] })
-      } else {
+      } else if (typeof value !== 'function') {
         dest[name] = value
       }
     }

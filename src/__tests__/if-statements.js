@@ -1,5 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const reShift = require('..')
+const { run, reShift } = require('..')
 
 test('convert if-else to ternary operation', () => {
   const code = `
@@ -33,11 +33,12 @@ test('convert if-else to ternary operation', () => {
     }
   `
 
-  const transformed =
-    reShift(code).add({
+  const shifter = (source) =>
+    reShift(source, {
       capture  : 'if ( {{test}} ) { return {{ifRet}} } else { return {{elseRet}} }',
       transform: 'return {{test}} ? {{ifRet}} : {{elseRet}}',
-    }).toSource()
+    })
+  const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -79,14 +80,18 @@ test('remove `else` when the `if` block returns', () => {
     }
   `
 
-  const transformed =
-    reShift(code).add({
+  const shifter = (source) =>
+    reShift(source, {
       capture  : 'if ( {{test}} ) { return {{ifRet}} } else { {{...elseBody}} }',
       // transform: 'if ( {{test}} ) { return {{ifRet}} } {{...elseBody}}',
-      transform: (util) => {
-        util.replace('if ( {{test}} ) { return {{ifRet}} }')
-        util.insertAfter('{{...elseBody}}')
-      },
-    }).toSource()
+      transform: (t) =>
+        t.replace(
+          `if ( {{test}} ) {
+            return {{ifRet}}
+          }`
+        )
+        .insertAfter('{{...elseBody}}'),
+    })
+  const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
