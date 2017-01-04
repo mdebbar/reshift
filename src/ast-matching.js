@@ -24,6 +24,18 @@ function createMatcher(ast, captureTrees, callback) {
   }
 }
 
+function hasMatchesInSubtree(ast, subtree, matchTree) {
+  let matchFound = false
+  const findMatchInSubTree = createMatcher(ast, [matchTree], onMatch)
+
+  function onMatch() {
+    matchFound = true
+  }
+
+  findMatchInSubTree(subtree)
+  return matchFound
+}
+
 /**
  * Compares a `path` with a `subtree` and returns the result. If they match,
  * it returns an object containing all captured nodes. If no match, returns false.
@@ -59,4 +71,4 @@ function compareAndCapture(path, subtree) {
   return capturedInfo
 }
 
-module.exports = { createMatcher }
+module.exports = { createMatcher, hasMatchesInSubtree }

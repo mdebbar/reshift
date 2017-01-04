@@ -3,6 +3,9 @@ const { createMatcher } = require('./ast-matching')
 const { applyTransform, normalizeTransform } = require('./ast-transform-util')
 const { replaceCaptureNodes } = require('./ast-capture')
 const { print } = require('./ast-print')
+const AstFilterer = require('./ast-filterer')
+
+const filterer = new AstFilterer()
 
 function run(source, shifterFn) {
   const shifter = shifterFn(source)
@@ -27,7 +30,8 @@ function applyShifter(ast, shifter) {
   function onMatch(path, captured, i) {
     const { filter, chain: chainedShifter } = shifts[i]
 
-    if (filter && !filter(path, captured)) {
+    filterer.reset(ast, path, captured)
+    if (filter && !filter(filterer)) {
       // Tell the AST matcher that this wasn't really a match.
       return false
     }

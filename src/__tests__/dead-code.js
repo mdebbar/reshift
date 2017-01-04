@@ -34,7 +34,7 @@ test('remove if-statement when its test is falsey', () => {
       //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
       capture  : 'if ( {{test}} ) { {{...body}} }',
       transform: '',
-      filter: (path, captured) => namedTypes.Literal.check(captured.test) && !captured.test.value,
+      filter: (f) => f.namedTypes.Literal.check(f.captured.test) && !f.captured.test.value,
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
@@ -59,7 +59,7 @@ test('remove array.forEach() when its callback is empty', () => {
     reShift(source, {
       capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
       transform: '',
-      filter: (path, captured) => captured.body.length === 0,
+      filter: (f) => f.captured.body.length === 0,
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)

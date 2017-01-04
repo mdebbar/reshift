@@ -10,9 +10,9 @@ test('pre-calculate additions', () => {
     var sum = 8 + fn() + 17 + x + y + 9
   `
 
-  const filter = (path, captured) =>
-    namedTypes.NumericLiteral.check(captured.x) &&
-    namedTypes.NumericLiteral.check(captured.y)
+  const filter = (f) =>
+    f.namedTypes.NumericLiteral.check(f.captured.x) &&
+    f.namedTypes.NumericLiteral.check(f.captured.y)
 
   const shifter = (source) =>
     reShift(source, {
@@ -36,9 +36,9 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
     fn(60, 7 - 2 * x)
   `
 
-  const filter = (path, captured) =>
-    namedTypes.NumericLiteral.check(captured.x) &&
-    namedTypes.NumericLiteral.check(captured.y)
+  const filter = (f) =>
+    f.namedTypes.NumericLiteral.check(f.captured.x) &&
+    f.namedTypes.NumericLiteral.check(f.captured.y)
 
   const shifter = (source) =>
     reShift(source, {
@@ -74,10 +74,9 @@ test('pre-calculate string concatenations', () => {
     reShift(source, {
       capture: '{{x}} + {{y}}',
       transform: (t) => t.replace(`('${t.captured.x.value + t.captured.y.value}')`),
-      filter: (path, captured) =>
-        namedTypes.Literal.check(captured.x) && namedTypes.Literal.check(captured.y) &&
-        typeof captured.x.value === 'string' &&
-        typeof captured.y.value === 'string',
+      filter: (f) =>
+        f.namedTypes.StringLiteral.check(f.captured.x) &&
+        f.namedTypes.StringLiteral.check(f.captured.y),
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)

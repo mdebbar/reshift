@@ -26,7 +26,7 @@ test('remove if-statement when its block is empty', () => {
     reShift(source, {
       capture  : 'if ( {{test}} ) { {{...body}} }',
       transform: '',
-      filter: (path, captured) => captured.body.length === 0,
+      filter: (f) => f.captured.body.length === 0,
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
@@ -51,7 +51,7 @@ test('remove array.forEach() when its callback is empty', () => {
     reShift(source, {
       capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
       transform: '',
-      filter: (path, captured) => captured.body.length === 0,
+      filter: (f) => f.captured.body.length === 0,
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
@@ -79,7 +79,7 @@ test('replace array.map() with `undefined` when callback is empty', () => {
     reShift(source, {
       capture  : '{{arr}}.map(function({{...params}}) { {{...body}} })',
       transform: 'void 0',
-      filter: (path, captured) => captured.body.length === 0,
+      filter: (f) => f.captured.body.length === 0,
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
