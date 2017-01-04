@@ -38,11 +38,11 @@ test('convert to arrow functions and remove bind(this) and block', () => {
 
   const shifter = createShifter({
     capture: '(function( {{...params}} ) { {{...body}} })',
-    filter: (f) => !f.has('this') && !f.has('arguments'),
+    filter: (f) => !f.contains('this') && !f.contains('arguments'),
     transform: '( {{...params}} ) => { {{...body}} }',
   }, {
     capture: '(function( {{...params}} ) { {{...body}} }).bind(this)',
-    filter: (f) => !f.has('arguments'),
+    filter: (f) => !f.contains('arguments'),
     transform: '( {{...params}} ) => { {{...body}} }',
   }, {
     capture: '(( {{...params}} ) => { {{...body}} }).bind(this)',

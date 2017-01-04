@@ -1,6 +1,6 @@
 const assert = require('assert')
 const { parse, /* parseWithCapture, */ parseAsPartial } = require('./ast-parse')
-const { createMatcher } = require('./ast-matching')
+const { findMatchInSubTree } = require('./ast-matching')
 const { applyTransform, normalizeTransform } = require('./ast-transform-util')
 // const { replaceCaptureNodes } = require('./ast-capture')
 const { print } = require('./ast-print')
@@ -30,44 +30,17 @@ function reShift(source, shifter) {
  * on the AST.
  */
 function reShiftAst(ast, shifter) {
-  const { shifts } = shifter
-
-  let isMatched = false
-  const transforms = shifts.map(s => normalizeTransform(s.transform))
-  const captureTrees = shifts.map(s => parseAsPartial(s.capture))
-
-  function onMatch(path, captured, i) {
-    const { filter } = shifts[i]
-
-    filterer.reset(ast, path, captured)
-    if (filter && !filter(filterer)) {
-      // Tell the AST matcher that this wasn't really a match.
-      return false
-    }
-
-    isMatched = true
-    if (transforms[i]) {
-      applyTransform(path, captured, transforms[i])
-      trees.push(path.node)
-    }
-  }
-
-  const findMatchInSubTree = createMatcher(ast, captureTrees, onMatch)
-  // `trees` holds all AST trees that still need to be considered for transformation.
-  // Initially, it's the whole AST of the source. Subsequently, whenever a subtree is
-  // transformed, we need to append it to this list to potentially apply other transforms on it.
-  const trees = [ast]
-  while (trees.length > 0) {
-    const subtree = trees.shift()
-    findMatchInSubTree(subtree)
-  }
-  return isMatched
+  return reShiftAstSubtree(ast, ast, shifter)
 }
 
+/**
+ * Applies a `shifter` to a `subtree` inside the given `ast`.
+ * Also returns true if any transformations occur.
+ */
 function reShiftAstSubtree(ast, subtree, shifter) {
   const { shifts } = shifter
 
-  let isMatched = false
+  let isTransformed = false
   const transforms = shifts.map(s => normalizeTransform(s.transform))
   const captureTrees = shifts.map(s => parseAsPartial(s.capture))
 
@@ -75,28 +48,16 @@ function reShiftAstSubtree(ast, subtree, shifter) {
     const { filter } = shifts[i]
 
     filterer.reset(ast, path, captured)
-    if (filter && !filter(filterer)) {
-      // Tell the AST matcher that this wasn't really a match.
-      return false
-    }
-
-    isMatched = true
-    if (transforms[i]) {
+    if (!filter || filter(filterer)) {
       applyTransform(path, captured, transforms[i])
-      treesToSearch.push(path.node)
+      isTransformed = true
+      // By returning true, the matcher will know that a transformation has been applied.
+      return true
     }
   }
 
-  const findMatchInSubTree = createMatcher(ast, captureTrees, onMatch)
-  // `trees` holds all AST trees that still need to be considered for transformation.
-  // Initially, it's the whole AST of the source. Subsequently, whenever a subtree is
-  // transformed, we need to append it to this list to potentially apply other transforms on it.
-  const treesToSearch = [subtree]
-  while (treesToSearch.length > 0) {
-    const tree = treesToSearch.shift()
-    findMatchInSubTree(tree)
-  }
-  return isMatched
+  findMatchInSubTree(ast, subtree, captureTrees, onMatch)
+  return isTransformed
 }
 
 

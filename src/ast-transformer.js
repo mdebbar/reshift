@@ -39,22 +39,12 @@ class AstTransformer {
     return this
   }
 
-  insertBefore(replacement) {
-    replacement = this.build(replacement)
-    replacement = Array.isArray(replacement) ? replacement : [replacement]
-
-    const element = this._findNearestListElement()
-    element.insertBefore(...replacement)
-    return this
+  insertBefore(item) {
+    return this._insert('insertBefore', item)
   }
 
-  insertAfter(replacement) {
-    replacement = this.build(replacement)
-    replacement = Array.isArray(replacement) ? replacement : [replacement]
-
-    const element = this._findNearestListElement()
-    element.insertAfter(...replacement)
-    return this
+  insertAfter(item) {
+    return this._insert('insertAfter', item)
   }
 
   chain(subtree, shifter) {
@@ -74,6 +64,15 @@ class AstTransformer {
     //   delete path.node.end
     // })
     return replaceCaptureNodes(template, this.captured)
+  }
+
+  _insert(insertMethod, item) {
+    item = this.build(item)
+    item = Array.isArray(item) ? item : [item]
+
+    const element = this._findNearestListElement()
+    element[insertMethod](...item)
+    return this
   }
 
   /**

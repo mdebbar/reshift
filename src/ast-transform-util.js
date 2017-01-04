@@ -13,8 +13,10 @@ function applyTransform(path, capturedInfo, transformFn) {
 
 function normalizeTransform(transform) {
   if (typeof transform === 'string') {
-    transform = parseAsPartial(transform)
-    return (t) => t.replace(deepCopy(transform))
+    const transformTree = parseAsPartial(transform)
+    return function normalizedTransform(t) {
+      t.replace(deepCopy(transformTree))
+    }
   }
   return transform
 }

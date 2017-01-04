@@ -7,12 +7,16 @@ class AstFilterer {
     this.ast = ast
     this.path = path
     this.captured = captured
-    this.namedTypes = n
+    this.types = n
   }
 
-  has(template) {
+  contains(node, template) {
+    if (typeof node === 'string' && typeof template === 'undefined') {
+      template = node
+      node = this.path.value
+    }
     const templateTree = parseAsPartial(template)
-    return hasMatchesInSubtree(this.ast, this.path.value, templateTree)
+    return hasMatchesInSubtree(this.ast, node, templateTree)
   }
 }
 

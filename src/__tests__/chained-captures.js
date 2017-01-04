@@ -30,7 +30,7 @@ test('check if function has reference to `this`', () => {
 
   const shifter = createShifter({
     capture: '(function( {{...params}}) { {{...body}} })',
-    filter: (f) => f.has('this'),
+    filter: (f) => f.contains('this'),
     chain: reShift('{{...body}}', {
       capture: 'this',
       transform: '_that',
@@ -56,11 +56,11 @@ test('handle `arguments` when converting to arrow functions', () => {
 
   const shifter = createShifter({
     capture: '(function( {{...params}} ) { {{...body}} })',
-    filter: (f) => !f.has('arguments'),
+    filter: (f) => !f.contains('arguments'),
     transform: '( {{...params}} ) => { {{...body}} }',
   }, {
     capture: '(function( {{...params}} ) { {{...body}} })',
-    filter: (f) => f.has('arguments'),
+    filter: (f) => f.contains('arguments'),
     transform: (t) => {
       t.captured.params.push(t.build('...rest'))
       t.captured.body.unshift(t.build('const args = [{{...params}}]'))

@@ -1,34 +1,44 @@
 const types = require('recast/lib/types')
 const { namedTypes } = types
-const { postOrderSubtree } = require('./ast-traverse')
+const { preOrderSubtree, preOrderTwo } = require('./ast-traverse')
 
-function createMatcher(ast, captureTrees, callback) {
+function findMatchInSubTree(ast, subtree, captureTrees, callback) {
+  let startOver = true
 
-  function visitor(path) {
+  function matchingVisitor(path) {
     for (let i = 0; i < captureTrees.length; i++) {
-      const capturedInfo = compareAndCapture(path, captureTrees[i])
-      // The callback can return false to indicate that it didn't find this match satisfying.
-      // In that case, we should continue looking for another match and not break.
-      if (capturedInfo && callback(path, capturedInfo, i) !== false) {
-        break // from the for-loop
+      const captured = compareAndCapture(path.value, captureTrees[i])
+      if (captured) {
+        // The callback can return true to indicate that a transform has been applied.
+        // In that case, we should re-traverse the tree looking for new matches.
+        const retValue = callback(path, captured, i)
+        if (retValue === true) {
+          // A transform has been successfully applied
+          // ==> start over and cancel the current traversal.
+          startOver = true
+          return false
+        }
+        // The callback can also return false to indicate that it doesn't want
+        // any more matches.
+        if (retValue === false) {
+          this.abort()
+        }
       }
     }
   }
 
-  return function findMatchInSubTree(subtree) {
-    postOrderSubtree(ast, subtree, visitor)
+  while (startOver) {
+    startOver = false
+    preOrderSubtree(ast, subtree, matchingVisitor)
   }
 }
 
 function hasMatchesInSubtree(ast, subtree, matchTree) {
   let matchFound = false
-  const findMatchInSubTree = createMatcher(ast, [matchTree], onMatch)
-
-  function onMatch() {
+  findMatchInSubTree(ast, subtree, [matchTree], () => {
     matchFound = true
-  }
-
-  findMatchInSubTree(subtree)
+    return false
+  })
   return matchFound
 }
 
@@ -38,31 +48,28 @@ function hasMatchesInSubtree(ast, subtree, matchTree) {
  *
  * This implementation is iterative (using a queue) to avoid deep recursive calls.
  */
-function compareAndCapture(path, subtree) {
-  if (!namedTypes[path.node.type].check(subtree)) {
-    return false
-  }
+function compareAndCapture(ast, captureTree) {
+  // TODO: [optimization] bail out as fast as possible
+  let captured = {}
 
-  const capturedInfo = {}
-  const paths = [{ path, subtree }]
-
-  while (paths.length > 0) {
-    const { path, subtree } = paths.shift()
-    const { value } = path
-
-    if (namedTypes.Capture.check(subtree)) {
+  function compareAndCaptureVisitor(path1, path2) {
+    const [val1, val2] = [path1.value, path2.value]
+    if (namedTypes.Capture.check(val2)) {
       // TODO: if 2 captures have the same name, we should check if they are equal.
-      capturedInfo[subtree.name] = value
-    } else if (typeof value === 'object' && value !== null &&
-               typeof subtree === 'object' && subtree !== null) {
-      types.getFieldNames(value).forEach((fieldName) => {
-        paths.push({ path: path.get(fieldName), subtree: types.getFieldValue(subtree, fieldName) })
-      })
-    } else if (value != subtree) {
+      captured[val2.name] = val1
+      // Tell the traverser to skip the children of current node.
       return false
     }
+    if (val1 === null || val2 === null || typeof val1 !== 'object' || typeof val2 !== 'object') {
+      if (val1 != val2) {
+        captured = false
+        this.abort()
+      }
+    }
   }
-  return capturedInfo
+
+  preOrderTwo(ast, captureTree, compareAndCaptureVisitor)
+  return captured
 }
 
-module.exports = { createMatcher, hasMatchesInSubtree }
+module.exports = { findMatchInSubTree, hasMatchesInSubtree }

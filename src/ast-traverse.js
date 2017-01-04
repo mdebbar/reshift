@@ -1,51 +1,115 @@
 const types = require('recast/lib/types')
+const { namedTypes: n, NodePath } = types
 
-// TODO: [optimization] write an iterative implementation for traversal.
+const ABORT_EXCEPTION = Symbol('ABORT_EXCEPTION')
 
-function preOrderType(ast, type, callback) {
-  types.visit(ast, {
-    [`visit${type}`]: function visitNode(path) {
-      if (callback(path) !== false) {
-        this.traverse(path)
-      }
-    },
-  })
-}
-
+/**
+ * Low-level pre-order (breadth-first) traversal of an AST.
+ * It invokes `callback` for everything in the AST, not just nodes.
+ *
+ * The callback can return false to skip the traversal of the current node's children.
+ * It can also call `this.abort()` to stop the whole traversal.
+ */
 function preOrder(ast, callback) {
-  preOrderType(ast, 'Node', callback)
-}
-
-function postOrder(ast, callback) {
-  types.visit(ast, {
-    visitNode: function visitNode(path) {
-      this.traverse(path)
-      callback(path)
-    },
+  preOrderTwo(ast, null, function(path1) {
+    return callback.call(this, path1)
   })
 }
 
 /**
- * Post-order traversal of a subtree inside an AST.
+ * Traverses two AST trees and calls `callback` on each pair of paths.
  */
-function postOrderSubtree(ast, subtree, callback) {
-  let insideSubtree = false
-  types.visit(ast, {
-    visitNode: function visitNode(path) {
-      const thisIsSubtree = path.node === subtree
-      if (thisIsSubtree) {
-        insideSubtree = true
-      }
-      this.traverse(path)
-      if (insideSubtree) {
-        callback(path)
-      }
-      if (thisIsSubtree) {
-        insideSubtree = false
-      }
+function preOrderTwo(ast1, ast2, callback) {
+  // https://github.com/benjamn/ast-types/blob/d3b32/lib/path-visitor.js#L126
+  const root1 = (ast1 instanceof NodePath) ? ast1 : new NodePath({ root: ast1 }).get('root')
+  const root2 = (ast2 instanceof NodePath) ? ast2 : new NodePath({ root: ast2 }).get('root')
+
+  // A queue that keeps pairs of paths to be traversed.
+  const queue = []
+  queue.push([root1, root2])
+
+  let didAbort = false
+  const context = {
+    abort() {
+      didAbort = true
+      throw ABORT_EXCEPTION
     },
+  }
+
+  while (queue.length > 0) {
+    const [path1, path2] = queue.shift()
+
+    let traverseChildren = true
+    try {
+      traverseChildren = callback.call(context, path1, path2)
+    } finally {
+      if (didAbort) {
+        return false // eslint-disable-line no-unsafe-finally
+      }
+    }
+
+    if (traverseChildren !== false) {
+      const usedKeys = {}
+      const appendChildrenPair = (key) => {
+        if (!usedKeys[key]) {
+          usedKeys[key] = true
+          queue.push([path1.get(key), path2.get(key)])
+        }
+      }
+      getKeys(path1.value).forEach(appendChildrenPair)
+      getKeys(path2.value).forEach(appendChildrenPair)
+    }
+  }
+}
+
+/**
+ * Pre-order traversal with filtering by node type.
+ */
+function preOrderType(ast, type, callback) {
+  preOrder(ast, function preOrderTypeVisitor(path) {
+    if (n[type].check(path.value)) {
+      return callback.call(this, path)
+    }
   })
 }
 
+/**
+ * Pre-order (breadth-first) traversal of a subtree inside an AST.
+ */
+function preOrderSubtree(ast, subtree, callback) {
+  const subtreePath = findSubtreePath(ast, subtree)
+  preOrderType(subtreePath, 'Node', callback)
+}
 
-module.exports = { preOrder, preOrderType, postOrder, postOrderSubtree }
+/**
+ * Get the path of a `subtree` inside an AST.
+ */
+function findSubtreePath(ast, subtree) {
+  let subtreePath
+  preOrder(ast, function findSubtreePathVisitor(path) {
+    if (path.value === subtree) {
+      subtreePath = path
+      this.abort()
+    }
+  })
+  return subtreePath
+}
+
+/**
+ * Get keys for children of a value in an AST. The "value" could be anything
+ * inside the AST (e.g. node, array, etc).
+ */
+function getKeys(value) {
+  if (!value || typeof value !== 'object') {
+    return []
+  }
+
+  if (Array.isArray(value)) {
+    return value.map((_, i) => i)
+  } else {
+    return types.getFieldNames(value)
+  }
+}
+
+
+module.exports = { preOrder, preOrderTwo, preOrderType, preOrderSubtree }
