@@ -1,7 +1,7 @@
 const { builders: b, namedTypes: n } = require('recast/lib/types')
 const { parseAsPartial } = require('./ast-parse')
-const { preOrderWithType } = require('./ast-traverse')
-// const { preOrder, preOrderWithType } = require('./ast-traverse')
+const { replaceCaptureNodes } = require('./ast-capture')
+// const { preOrder } = require('./ast-traverse')
 
 class AstTransformer {
   reset(path, captured) {
@@ -43,7 +43,7 @@ class AstTransformer {
     replacement = this._processReplacement(replacement)
     replacement = Array.isArray(replacement) ? replacement : [replacement]
 
-    const element = this._getNearestListElement()
+    const element = this._findNearestListElement()
     element.insertBefore(...replacement)
     return this
   }
@@ -52,7 +52,7 @@ class AstTransformer {
     replacement = this._processReplacement(replacement)
     replacement = Array.isArray(replacement) ? replacement : [replacement]
 
-    const element = this._getNearestListElement()
+    const element = this._findNearestListElement()
     element.insertAfter(...replacement)
     return this
   }
@@ -67,30 +67,14 @@ class AstTransformer {
     //   delete path.node.start
     //   delete path.node.end
     // })
-    return this._replaceCaptureNodes(replacement)
+    return replaceCaptureNodes(replacement, this.captured)
   }
 
-  _replaceCaptureNodes(ast) {
-    if (n.Capture.check(ast)) {
-      return this._getCapturedNode(ast.name)
-    }
-
-    preOrderWithType(ast, 'Capture', (path) => {
-      const capturedNode = this._getCapturedNode(path.node.name)
-      // TODO: maybe use `path.prune()` when `capturedNode` is falsey?
-      path.replace(capturedNode)
-    })
-    return ast
-  }
-
-  _getCapturedNode(name) {
-    if (!(name in this.captured)) {
-      throw `Trying to use {{${name}}} in the transform but it wasn't captured.`
-    }
-    return this.captured[name]
-  }
-
-  _getNearestListElement() {
+  /**
+   * Find the nearest parent that's a list item. This is useful when inserting
+   * a node before/after another.
+   */
+  _findNearestListElement() {
     let nearestListElement = this.path
     while (nearestListElement && typeof nearestListElement.name !== 'number') {
       nearestListElement = nearestListElement.parentPath

@@ -30,7 +30,7 @@ test('check if function has reference to `this`', () => {
       capture: '(function( {{...params}}) { {{...body}} })',
       chain: reShift('{{...body}}', {
         capture: 'this',
-        transform: 'that',
+        transform: '_that',
       }),
       transform: '( {{...params}}) => { {{...body}} }',
     })

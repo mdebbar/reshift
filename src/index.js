@@ -1,5 +1,5 @@
 require('./def/capture')
-const reShift = require('./reshift')
 const run = require('./run')
+const reShift = require('./reshift')
 
 module.exports = { run, reShift }

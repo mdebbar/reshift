@@ -28,8 +28,12 @@ function parse(source, options) {
   return _parse(source, { parser: normalParser }, options)
 }
 
+function parseWithCapture(source, options) {
+  return _parse(source, { parser: captureParser }, options)
+}
+
 function parseAsPartial(source, options) {
-  const { program } = _parse(source, { parser: captureParser }, options)
+  const { program } = parseWithCapture(source, options)
 
   let partial = program.body
   if (Array.isArray(partial)) {
@@ -47,4 +51,4 @@ function parseAsPartial(source, options) {
   return partial
 }
 
-module.exports = { parse, parseAsPartial }
+module.exports = { parse, parseWithCapture, parseAsPartial }

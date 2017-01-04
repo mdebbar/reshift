@@ -21,7 +21,7 @@ function validateShift({ capture, chain, transform, filter }) {
     'Expecting \'chain\' of type reShift'
   )
   assert(
-    typeof transform === 'string' || typeof transform === 'function',
+    typeof transform === 'undefined' || typeof transform === 'string' || typeof transform === 'function',
     `Expecting 'transform' of type string or function, got ${typeof transform}`
   )
   assert(
