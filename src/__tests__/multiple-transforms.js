@@ -1,5 +1,8 @@
 require('../test-helpers/expect-code-equality')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('convert to arrow functions and remove bind(this) and block', () => {
   const code = `
@@ -33,22 +36,21 @@ test('convert to arrow functions and remove bind(this) and block', () => {
     }.bind(this))
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture: '(function( {{...params}} ) { {{...body}} })',
-      filter: (f) => !f.has('this') && !f.has('arguments'),
-      transform: '( {{...params}} ) => { {{...body}} }',
-    }, {
-      capture: '(function( {{...params}} ) { {{...body}} }).bind(this)',
-      filter: (f) => !f.has('arguments'),
-      transform: '( {{...params}} ) => { {{...body}} }',
-    }, {
-      capture: '(( {{...params}} ) => { {{...body}} }).bind(this)',
-      transform: '( {{...params}} ) => { {{...body}} }',
-    }, {
-      capture: '(( {{...params}} ) => { return {{retExpr}} })',
-      transform: '(( {{...params}} ) => {{retExpr}})',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture: '(function( {{...params}} ) { {{...body}} })',
+    filter: (f) => !f.has('this') && !f.has('arguments'),
+    transform: '( {{...params}} ) => { {{...body}} }',
+  }, {
+    capture: '(function( {{...params}} ) { {{...body}} }).bind(this)',
+    filter: (f) => !f.has('arguments'),
+    transform: '( {{...params}} ) => { {{...body}} }',
+  }, {
+    capture: '(( {{...params}} ) => { {{...body}} }).bind(this)',
+    transform: '( {{...params}} ) => { {{...body}} }',
+  }, {
+    capture: '(( {{...params}} ) => { return {{retExpr}} })',
+    transform: '(( {{...params}} ) => {{retExpr}})',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

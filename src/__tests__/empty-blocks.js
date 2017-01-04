@@ -1,5 +1,8 @@
 require('../test-helpers/expect-code-equality')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('remove if-statement when its block is empty', () => {
   const code = `
@@ -22,13 +25,12 @@ test('remove if-statement when its block is empty', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : 'if ( {{test}} ) { {{...body}} }',
-      transform: '',
-      filter: (f) => f.captured.body.length === 0,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : 'if ( {{test}} ) { {{...body}} }',
+    transform: '',
+    filter: (f) => f.captured.body.length === 0,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -47,13 +49,12 @@ test('remove array.forEach() when its callback is empty', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
-      transform: '',
-      filter: (f) => f.captured.body.length === 0,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
+    transform: '',
+    filter: (f) => f.captured.body.length === 0,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -75,12 +76,11 @@ test('replace array.map() with `undefined` when callback is empty', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '{{arr}}.map(function({{...params}}) { {{...body}} })',
-      transform: 'void 0',
-      filter: (f) => f.captured.body.length === 0,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '{{arr}}.map(function({{...params}}) { {{...body}} })',
+    transform: 'void 0',
+    filter: (f) => f.captured.body.length === 0,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

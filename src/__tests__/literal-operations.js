@@ -1,6 +1,9 @@
 require('../test-helpers/expect-code-equality')
 const { namedTypes } = require('recast/lib/types')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('pre-calculate additions', () => {
   const code = `
@@ -14,17 +17,16 @@ test('pre-calculate additions', () => {
     f.namedTypes.NumericLiteral.check(f.captured.x) &&
     f.namedTypes.NumericLiteral.check(f.captured.y)
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture: '{{x}} + {{y}}',
-      filter: filter,
-      transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
-    }, {
-      capture: '{{extra}} + {{x}} + {{y}}',
-      filter: filter,
-      transform: (t) => t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`),
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture: '{{x}} + {{y}}',
+    filter: filter,
+    transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
+  }, {
+    capture: '{{extra}} + {{x}} + {{y}}',
+    filter: filter,
+    transform: (t) => t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`),
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -40,25 +42,24 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
     f.namedTypes.NumericLiteral.check(f.captured.x) &&
     f.namedTypes.NumericLiteral.check(f.captured.y)
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture: '{{x}} + {{y}}',
-      transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
-      filter: filter,
-    }, {
-      capture: '{{x}} - {{y}}',
-      transform: (t) => t.replace(`${t.captured.x.value - t.captured.y.value}`),
-      filter: filter,
-    }, {
-      capture: '{{x}} * {{y}}',
-      transform: (t) => t.replace(`${t.captured.x.value * t.captured.y.value}`),
-      filter: filter,
-    }, {
-      capture: '{{x}} / {{y}}',
-      transform: (t) => t.replace(`${t.captured.x.value / t.captured.y.value}`),
-      filter: filter,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture: '{{x}} + {{y}}',
+    transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
+    filter: filter,
+  }, {
+    capture: '{{x}} - {{y}}',
+    transform: (t) => t.replace(`${t.captured.x.value - t.captured.y.value}`),
+    filter: filter,
+  }, {
+    capture: '{{x}} * {{y}}',
+    transform: (t) => t.replace(`${t.captured.x.value * t.captured.y.value}`),
+    filter: filter,
+  }, {
+    capture: '{{x}} / {{y}}',
+    transform: (t) => t.replace(`${t.captured.x.value / t.captured.y.value}`),
+    filter: filter,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -70,14 +71,13 @@ test('pre-calculate string concatenations', () => {
     var str = 'abc' + fn('defgepqrst')
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture: '{{x}} + {{y}}',
-      transform: (t) => t.replace(`('${t.captured.x.value + t.captured.y.value}')`),
-      filter: (f) =>
-        f.namedTypes.StringLiteral.check(f.captured.x) &&
-        f.namedTypes.StringLiteral.check(f.captured.y),
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture: '{{x}} + {{y}}',
+    transform: (t) => t.replace(`('${t.captured.x.value + t.captured.y.value}')`),
+    filter: (f) =>
+      f.namedTypes.StringLiteral.check(f.captured.x) &&
+      f.namedTypes.StringLiteral.check(f.captured.y),
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

@@ -7,6 +7,8 @@ const transformer = new AstTransformer()
 function applyTransform(path, capturedInfo, transformFn) {
   transformer.reset(path, capturedInfo)
   transformFn(transformer)
+  // TODO: do this
+  // return transformer.didTransform
 }
 
 function normalizeTransform(transform) {

@@ -1,5 +1,8 @@
 require('../test-helpers/expect-code-equality')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('change function signature and rename params', () => {
 

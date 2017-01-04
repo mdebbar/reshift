@@ -1,6 +1,9 @@
 require('../test-helpers/expect-code-equality')
 const { namedTypes } = require('recast/lib/types')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('remove if-statement when its test is falsey', () => {
   const code = `
@@ -29,14 +32,13 @@ test('remove if-statement when its test is falsey', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
-      capture  : 'if ( {{test}} ) { {{...body}} }',
-      transform: '',
-      filter: (f) => f.namedTypes.Literal.check(f.captured.test) && !f.captured.test.value,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
+    capture  : 'if ( {{test}} ) { {{...body}} }',
+    transform: '',
+    filter: (f) => f.namedTypes.Literal.check(f.captured.test) && !f.captured.test.value,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -55,12 +57,11 @@ test('remove array.forEach() when its callback is empty', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
-      transform: '',
-      filter: (f) => f.captured.body.length === 0,
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
+    transform: '',
+    filter: (f) => f.captured.body.length === 0,
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

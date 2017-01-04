@@ -1,5 +1,8 @@
 require('../test-helpers/expect-code-equality')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('convert for-loop to forEach', () => {
   const code = `
@@ -19,11 +22,10 @@ test('convert for-loop to forEach', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : 'for ( var {{i}} = 0; {{i}} < {{arr}}.length; {{i}}++ ) { {{...body}} }',
-      transform: 'Array.prototype.forEach.call({{arr}}, function(_, {{i}}) { {{...body}} })',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : 'for ( var {{i}} = 0; {{i}} < {{arr}}.length; {{i}}++ ) { {{...body}} }',
+    transform: 'Array.prototype.forEach.call({{arr}}, function(_, {{i}}) { {{...body}} })',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })

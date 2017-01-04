@@ -7,15 +7,11 @@ function createMatcher(ast, captureTrees, callback) {
   function visitor(path) {
     for (let i = 0; i < captureTrees.length; i++) {
       const capturedInfo = compareAndCapture(path, captureTrees[i])
-      if (!capturedInfo) {
-        continue
-      }
       // The callback can return false to indicate that it didn't find this match satisfying.
       // In that case, we should continue looking for another match and not break.
-      if (callback(path, capturedInfo, i) === false) {
-        continue
+      if (capturedInfo && callback(path, capturedInfo, i) !== false) {
+        break // from the for-loop
       }
-      break // from the for-loop
     }
   }
 
@@ -57,10 +53,8 @@ function compareAndCapture(path, subtree) {
     if (namedTypes.Capture.check(subtree)) {
       // TODO: if 2 captures have the same name, we should check if they are equal.
       capturedInfo[subtree.name] = value
-    } else if (typeof value === 'object' &&
-               typeof subtree === 'object' &&
-               value !== null &&
-               subtree !== null) {
+    } else if (typeof value === 'object' && value !== null &&
+               typeof subtree === 'object' && subtree !== null) {
       types.getFieldNames(value).forEach((fieldName) => {
         paths.push({ path: path.get(fieldName), subtree: types.getFieldValue(subtree, fieldName) })
       })

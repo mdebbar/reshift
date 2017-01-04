@@ -11,7 +11,7 @@ class AstTransformer {
   }
 
   replace(replacement) {
-    replacement = this._processReplacement(replacement)
+    replacement = this.build(replacement)
     let path = this.path
 
     // Handle some tricky cases when replacing expressions/statements.
@@ -40,7 +40,7 @@ class AstTransformer {
   }
 
   insertBefore(replacement) {
-    replacement = this._processReplacement(replacement)
+    replacement = this.build(replacement)
     replacement = Array.isArray(replacement) ? replacement : [replacement]
 
     const element = this._findNearestListElement()
@@ -49,7 +49,7 @@ class AstTransformer {
   }
 
   insertAfter(replacement) {
-    replacement = this._processReplacement(replacement)
+    replacement = this.build(replacement)
     replacement = Array.isArray(replacement) ? replacement : [replacement]
 
     const element = this._findNearestListElement()
@@ -57,17 +57,23 @@ class AstTransformer {
     return this
   }
 
-  _processReplacement(replacement) {
-    if (typeof replacement === 'string') {
-      replacement = parseAsPartial(replacement)
+  chain(subtree, shifter) {
+    // TODO: find a solution to the cyclic dependency.
+    const { reShiftAstSubtree } = require('./ast-shifter')
+    return reShiftAstSubtree(this.path.node, subtree, shifter)
+  }
+
+  build(template) {
+    if (typeof template === 'string') {
+      template = parseAsPartial(template)
     }
-    // TODO: Should we remove all formatting info from the replacement tree?
-    // preOrder(replacement, (path) => {
+    // TODO: Should we remove all formatting info from the template tree?
+    // preOrder(template, (path) => {
     //   delete path.node.loc
     //   delete path.node.start
     //   delete path.node.end
     // })
-    return replaceCaptureNodes(replacement, this.captured)
+    return replaceCaptureNodes(template, this.captured)
   }
 
   /**

@@ -1,16 +1,18 @@
 require('../test-helpers/expect-code-equality')
-const { run, reShift } = require('..')
+const {
+  reShift,
+  createShifter
+} = require('..');
 
 test('remove bind(this) from simple situation', () => {
   const code = '(() => {}).bind(this)'
   const expected = '() => {}'
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '(() => {}).bind(this)',
-      transform: '() => {}',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '(() => {}).bind(this)',
+    transform: '() => {}',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -42,12 +44,11 @@ test('remove bind(this) from complex situation', () => {
     }
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '(( {{...params}} ) => { {{...body}} }).bind(this)',
-      transform: '( {{...params}} ) => { {{...body}} }',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '(( {{...params}} ) => { {{...body}} }).bind(this)',
+    transform: '( {{...params}} ) => { {{...body}} }',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -73,12 +74,11 @@ test('convert block body with a single return to expression', () => {
     }).apply(null, args);
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '( {{...params}} ) => { return {{retExpr}} }',
-      transform: '( {{...params}} ) => {{retExpr}}',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '( {{...params}} ) => { return {{retExpr}} }',
+    transform: '( {{...params}} ) => {{retExpr}}',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -104,11 +104,10 @@ test('convert function expressions to arrow functions', () => {
     }.apply(null, args);
   `
 
-  const shifter = (source) =>
-    reShift(source, {
-      capture  : '(function( {{...params}} ) { {{...body}} })',
-      transform: '( {{...params}} ) => { {{...body}} }',
-    })
-  const transformed = run(code, shifter)
+  const shifter = createShifter({
+    capture  : '(function( {{...params}} ) { {{...body}} })',
+    transform: '( {{...params}} ) => { {{...body}} }',
+  })
+  const transformed = reShift(code, shifter)
   expect(transformed).toEqualCode(expected)
 })
