@@ -2,17 +2,25 @@ const types = require('recast/lib/types')
 const { namedTypes } = types
 const { postOrderSubtree } = require('./ast-traverse')
 
-function createSubTreeMatcher(ast, captureTrees) {
-  return function matchInSubTree(subtree, callback) {
-    postOrderSubtree(ast, subtree, function matchInSubTreeVisitor(path) {
-      for (let i = 0; i < captureTrees.length; i++) {
-        const capturedInfo = compareAndCapture(path, captureTrees[i])
-        if (capturedInfo) {
-          callback(path, capturedInfo, i)
-          break // from the for-loop
-        }
+function createMatcher(ast, captureTrees, callback) {
+
+  function visitor(path) {
+    for (let i = 0; i < captureTrees.length; i++) {
+      const capturedInfo = compareAndCapture(path, captureTrees[i])
+      if (!capturedInfo) {
+        continue
       }
-    })
+      // The callback can return false to indicate that it didn't find this match satisfying.
+      // In that case, we should continue looking for another match and not break.
+      if (callback(path, capturedInfo, i) === false) {
+        continue
+      }
+      break // from the for-loop
+    }
+  }
+
+  return function findMatchInSubTree(subtree) {
+    postOrderSubtree(ast, subtree, visitor)
   }
 }
 
@@ -51,4 +59,4 @@ function compareAndCapture(path, subtree) {
   return capturedInfo
 }
 
-module.exports = { createSubTreeMatcher }
+module.exports = { createMatcher }

@@ -4,19 +4,25 @@ const { run, reShift } = require('..')
 
 test('pre-calculate additions', () => {
   const code = `
-    fn(5 + 2 + 1 + 10, 7 + 8 + x)
+    var sum = 5 + 2 + 1 + fn() + 10 + 7 + x + y + 3 + 6
   `
   const expected = `
-    fn(18, 15 + x)
+    var sum = 8 + fn() + 17 + x + y + 9
   `
+
+  const filter = (path, captured) =>
+    namedTypes.NumericLiteral.check(captured.x) &&
+    namedTypes.NumericLiteral.check(captured.y)
 
   const shifter = (source) =>
     reShift(source, {
       capture: '{{x}} + {{y}}',
+      filter: filter,
       transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
-      filter: (path, captured) =>
-        namedTypes.NumericLiteral.check(captured.x) &&
-        namedTypes.NumericLiteral.check(captured.y),
+    }, {
+      capture: '{{extra}} + {{x}} + {{y}}',
+      filter: filter,
+      transform: (t) => t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`),
     })
   const transformed = run(code, shifter)
   expect(transformed).toEqualCode(expected)
