@@ -15,7 +15,7 @@
     "debug": "node --debug-brk ./node_modules/.bin/jest -i"
   },
   "dependencies": {
-    "babylon": "mdebbar/babylon#matcher",
+    "babylon": "mdebbar/babylon#capture",
     "recast": "^0.11.18"
   },
   "devDependencies": {
