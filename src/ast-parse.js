@@ -3,10 +3,15 @@ const babylon = require('babylon')
 
 const { namedTypes } = recast.types
 
-const BABYLON_CAPTURE_OPTIONS = {
+const BABYLON_OPTIONS = {
+  sourceType: 'module',
+  plugins: ['*'],
+}
+
+const BABYLON_CAPTURE_OPTIONS = Object.assign({}, BABYLON_OPTIONS, {
   allowReturnOutsideFunction: true,
   plugins: ['capture'],
-}
+})
 
 const createBabylonParser = (options) => ({
   parse(source) {
@@ -15,7 +20,7 @@ const createBabylonParser = (options) => ({
 })
 
 // TODO: maybe use the 'flow' and 'jsx' plugins by default?
-const normalParser = createBabylonParser()
+const normalParser = createBabylonParser(BABYLON_OPTIONS)
 const captureParser = createBabylonParser(BABYLON_CAPTURE_OPTIONS)
 
 
