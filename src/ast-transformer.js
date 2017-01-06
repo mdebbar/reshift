@@ -10,6 +10,7 @@ class AstTransformer {
     this.namedTypes = n
   }
 
+  // TODO: support passing which node to be replaced.
   replace(replacement) {
     replacement = this.build(replacement)
     let path = this.path
@@ -47,10 +48,10 @@ class AstTransformer {
     return this._insert('insertAfter', item)
   }
 
-  chain(subtree, shifter) {
+  chain(subtree, shifters) {
     // TODO: find a solution to the cyclic dependency.
     const { reShiftAstSubtree } = require('./ast-shifter')
-    return reShiftAstSubtree(this.path.node, subtree, shifter)
+    return reShiftAstSubtree(this.path.node, subtree, shifters)
   }
 
   build(template) {

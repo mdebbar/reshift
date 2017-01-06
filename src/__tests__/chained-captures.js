@@ -1,8 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const {
-  reShift,
-  createShifter
-} = require('..');
+const { reShift } = require('..')
 
 test('check if function has reference to `this`', () => {
   const code = `
@@ -28,16 +25,17 @@ test('check if function has reference to `this`', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture: '(function( {{...params}}) { {{...body}} })',
     filter: (f) => f.contains('this'),
-    chain: reShift('{{...body}}', {
-      capture: 'this',
-      transform: '_that',
-    }),
-    transform: '( {{...params}}) => { {{...body}} }',
-  })
-  const transformed = reShift(code, shifter)
+    transform: (t) =>
+      t.replace('( {{...params}}) => { {{...body}} }')
+      .chain(t.captured.body, [{
+        capture: 'this',
+        transform: '_that',
+      }]),
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -54,7 +52,7 @@ test('handle `arguments` when converting to arrow functions', () => {
     };
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture: '(function( {{...params}} ) { {{...body}} })',
     filter: (f) => !f.contains('arguments'),
     transform: '( {{...params}} ) => { {{...body}} }',
@@ -65,12 +63,12 @@ test('handle `arguments` when converting to arrow functions', () => {
       t.captured.params.push(t.build('...rest'))
       t.captured.body.unshift(t.build('const args = [{{...params}}]'))
       t.replace('( {{...params}} ) => { {{...body}} }')
+      t.chain(t.captured.body, [{
+        capture: 'arguments',
+        transform: 'args',
+      }])
     },
-    chain: reShift('{{...body}}', {
-      capture: 'arguments',
-      transform: 'args',
-    }),
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })

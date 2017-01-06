@@ -1,18 +1,15 @@
 require('../test-helpers/expect-code-equality')
-const {
-  reShift,
-  createShifter
-} = require('..');
+const { reShift } = require('..')
 
 test('remove bind(this) from simple situation', () => {
   const code = '(() => {}).bind(this)'
   const expected = '() => {}'
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '(() => {}).bind(this)',
     transform: '() => {}',
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -44,11 +41,11 @@ test('remove bind(this) from complex situation', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '(( {{...params}} ) => { {{...body}} }).bind(this)',
     transform: '( {{...params}} ) => { {{...body}} }',
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -74,11 +71,11 @@ test('convert block body with a single return to expression', () => {
     }).apply(null, args);
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '( {{...params}} ) => { return {{retExpr}} }',
     transform: '( {{...params}} ) => {{retExpr}}',
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -104,10 +101,10 @@ test('convert function expressions to arrow functions', () => {
     }.apply(null, args);
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '(function( {{...params}} ) { {{...body}} })',
     transform: '( {{...params}} ) => { {{...body}} }',
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })

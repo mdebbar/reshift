@@ -7,19 +7,10 @@ const { print } = require('./ast-print')
 const AstFilterer = require('./ast-filterer')
 
 const filterer = new AstFilterer()
-const ShifterKey = Symbol('ShifterKey')
 
-function createShifter(...shifts) {
-  shifts.forEach(validateShift)
-  return {
-    [ShifterKey]: true,
-    shifts,
-  }
-}
-
-function reShift(source, shifter) {
+function reShift(source, shifters) {
   const ast = parse(source)
-  if (reShiftAst(ast, shifter)) {
+  if (reShiftAst(ast, shifters)) {
     return print(ast)
   }
   return source
@@ -29,23 +20,23 @@ function reShift(source, shifter) {
  * Applies a `shifter` to the given `ast` and returns true if any transformation occurs
  * on the AST.
  */
-function reShiftAst(ast, shifter) {
-  return reShiftAstSubtree(ast, ast, shifter)
+function reShiftAst(ast, shifters) {
+  return reShiftAstSubtree(ast, ast, shifters)
 }
 
 /**
  * Applies a `shifter` to a `subtree` inside the given `ast`.
  * Also returns true if any transformations occur.
  */
-function reShiftAstSubtree(ast, subtree, shifter) {
-  const { shifts } = shifter
+function reShiftAstSubtree(ast, subtree, shifters) {
+  shifters.forEach(validateShifter)
 
   let isTransformed = false
-  const transforms = shifts.map(s => normalizeTransform(s.transform))
-  const captureTrees = shifts.map(s => parseAsPartial(s.capture))
+  const transforms = shifters.map(s => normalizeTransform(s.transform))
+  const captureTrees = shifters.map(s => parseAsPartial(s.capture))
 
   function onMatch(path, captured, i) {
-    const { filter } = shifts[i]
+    const { filter } = shifters[i]
 
     filterer.reset(ast, path, captured)
     if (!filter || filter(filterer)) {
@@ -61,7 +52,7 @@ function reShiftAstSubtree(ast, subtree, shifter) {
 }
 
 
-function validateShift({ capture, transform, filter }) {
+function validateShifter({ capture, transform, filter }) {
   assert(
     typeof capture === 'string',
     `Expecting 'capture' of type string, got ${typeof capture}`
@@ -77,4 +68,4 @@ function validateShift({ capture, transform, filter }) {
   )
 }
 
-module.exports = { reShift, reShiftAst, reShiftAstSubtree, createShifter }
+module.exports = { reShift, reShiftAst, reShiftAstSubtree }

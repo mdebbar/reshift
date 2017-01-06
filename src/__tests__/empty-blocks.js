@@ -1,8 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const {
-  reShift,
-  createShifter
-} = require('..');
+const { reShift } = require('..')
 
 test('remove if-statement when its block is empty', () => {
   const code = `
@@ -25,12 +22,12 @@ test('remove if-statement when its block is empty', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : 'if ( {{test}} ) { {{...body}} }',
     transform: '',
     filter: (f) => f.captured.body.length === 0,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -49,12 +46,12 @@ test('remove array.forEach() when its callback is empty', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
     transform: '',
     filter: (f) => f.captured.body.length === 0,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -76,11 +73,11 @@ test('replace array.map() with `undefined` when callback is empty', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '{{arr}}.map(function({{...params}}) { {{...body}} })',
     transform: 'void 0',
     filter: (f) => f.captured.body.length === 0,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })

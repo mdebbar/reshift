@@ -1,5 +1,5 @@
 require('../test-helpers/expect-code-equality')
-const { reShift, createShifter } = require('..')
+const { reShift } = require('..')
 
 test('remove if-statement when its test is falsey', () => {
   const code = `
@@ -28,13 +28,13 @@ test('remove if-statement when its test is falsey', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
     capture  : 'if ( {{test}} ) { {{...body}} }',
     transform: '',
     filter: (f) => f.types.Literal.check(f.captured.test) && !f.captured.test.value,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -53,11 +53,11 @@ test('remove array.forEach() when its callback is empty', () => {
     }
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
     transform: '',
     filter: (f) => f.captured.body.length === 0,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })

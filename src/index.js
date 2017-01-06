@@ -1,4 +1,4 @@
 require('./def/capture')
-const { reShift, createShifter } = require('./ast-shifter')
+const { reShift } = require('./ast-shifter')
 
-module.exports = { reShift, createShifter }
+module.exports = { reShift }

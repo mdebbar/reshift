@@ -1,9 +1,6 @@
 require('../test-helpers/expect-code-equality')
 const { namedTypes } = require('recast/lib/types')
-const {
-  reShift,
-  createShifter
-} = require('..');
+const { reShift } = require('..')
 
 test('pre-calculate additions', () => {
   const code = `
@@ -17,7 +14,7 @@ test('pre-calculate additions', () => {
     f.types.NumericLiteral.check(f.captured.x) &&
     f.types.NumericLiteral.check(f.captured.y)
 
-  const shifter = createShifter({
+  const shifters = [{
     capture: '{{x}} + {{y}}',
     filter: filter,
     transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
@@ -25,8 +22,8 @@ test('pre-calculate additions', () => {
     capture: '{{extra}} + {{x}} + {{y}}',
     filter: filter,
     transform: (t) => t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`),
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -42,7 +39,7 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
     f.types.NumericLiteral.check(f.captured.x) &&
     f.types.NumericLiteral.check(f.captured.y)
 
-  const shifter = createShifter({
+  const shifters = [{
     capture: '{{x}} + {{y}}',
     transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
     filter: filter,
@@ -58,8 +55,8 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
     capture: '{{x}} / {{y}}',
     transform: (t) => t.replace(`${t.captured.x.value / t.captured.y.value}`),
     filter: filter,
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
 
@@ -71,13 +68,13 @@ test('pre-calculate string concatenations', () => {
     var str = 'abc' + fn('defgepqrst')
   `
 
-  const shifter = createShifter({
+  const shifters = [{
     capture: '{{x}} + {{y}}',
     transform: (t) => t.replace(`('${t.captured.x.value + t.captured.y.value}')`),
     filter: (f) =>
       f.types.StringLiteral.check(f.captured.x) &&
       f.types.StringLiteral.check(f.captured.y),
-  })
-  const transformed = reShift(code, shifter)
+  }]
+  const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
 })
