@@ -1,33 +1,58 @@
 const assert = require('assert')
+const { parse, parseAsPartial } = require('./ast-parse')
+const { findMatchesInSubTree } = require('./ast-matching')
+const { applyTransform, normalizeTransform } = require('./ast-transform-util')
+const { print } = require('./ast-print')
 
-const Shifter = Symbol('Shifter')
-
-function reShift(source, ...shifts) {
-  shifts.forEach(validateShift)
-  return {
-    [Shifter]: true,
-    source,
-    shifts,
+function reShift(source, shifters) {
+  const ast = parse(source)
+  if (reShiftAst(ast, shifters)) {
+    return print(ast)
   }
+  return source
 }
 
-function validateShift({ capture, chain, transform, filter }) {
+/**
+ * Applies a `shifter` to the given `ast` and returns true if any transformation occurs
+ * on the AST.
+ */
+function reShiftAst(ast, shifters) {
+  return reShiftAstSubtree(ast, ast, shifters)
+}
+
+/**
+ * Applies a `shifter` to a `subtree` inside the given `ast`.
+ * Also returns true if any transformations occur.
+ */
+function reShiftAstSubtree(ast, subtree, shifters) {
+  shifters.forEach(validateShifter)
+
+  let isTransformed = false
+  const transforms = shifters.map(s => normalizeTransform(s.transform))
+  const captureTrees = shifters.map(s => parseAsPartial(s.capture))
+
+  function onMatch(path, captured, i) {
+    if (applyTransform(path, captured, transforms[i])) {
+      isTransformed = true
+      // By returning true, the matcher will know that a transformation has been applied.
+      return true
+    }
+  }
+
+  findMatchesInSubTree(ast, subtree, captureTrees, onMatch)
+  return isTransformed
+}
+
+
+function validateShifter({ capture, transform }) {
   assert(
     typeof capture === 'string',
     `Expecting 'capture' of type string, got ${typeof capture}`
   )
   assert(
-    typeof chain === 'undefined' || Shifter in chain,
-    'Expecting \'chain\' of type reShift'
-  )
-  assert(
     typeof transform === 'undefined' || typeof transform === 'string' || typeof transform === 'function',
     `Expecting 'transform' of type string or function, got ${typeof transform}`
   )
-  assert(
-    typeof filter === 'undefined' || typeof filter === 'function',
-    `Expecting 'filter' of type function, got ${typeof filter}`
-  )
 }
 
-module.exports = reShift
+module.exports = { reShift, reShiftAst, reShiftAstSubtree }

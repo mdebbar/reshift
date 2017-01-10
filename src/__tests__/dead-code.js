@@ -31,8 +31,13 @@ test('remove if-statement when its test is falsey', () => {
   const shifters = [{
     //capture: 'if ( {{test: Literal}} ) { {{...body}} }',
     capture  : 'if ( {{test}} ) { {{...body}} }',
-    transform: '',
-    filter: (f) => f.types.Literal.check(f.captured.test) && !f.captured.test.value,
+
+    transform: (t, f) => {
+      if (!(f.types.Literal.check(f.captured.test) && !f.captured.test.value)) {
+        return
+      }
+      t.replace('')
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
@@ -55,8 +60,13 @@ test('remove array.forEach() when its callback is empty', () => {
 
   const shifters = [{
     capture  : '{{arr}}.forEach(function({{...params}}) { {{...body}} })',
-    transform: '',
-    filter: (f) => f.captured.body.length === 0,
+
+    transform: (t, f) => {
+      if (f.captured.body.length !== 0) {
+        return
+      }
+      t.replace('')
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)

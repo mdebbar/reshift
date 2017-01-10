@@ -45,16 +45,31 @@ test('handle more cases of .apply()', () => {
 
   const shifters = [{
     capture  : '{{fn}}.apply(null, {{args}})',
-    filter: (f) => f.types.Identifier.check(f.captured.fn),
-    transform: '{{fn}}(...{{args}})',
+
+    transform: (t, f) => {
+      if (!f.types.Identifier.check(f.captured.fn)) {
+        return
+      }
+      t.replace('{{fn}}(...{{args}})')
+    },
   }, {
     capture  : '{{fn}}.apply(undefined, {{args}})',
-    filter: (f) => f.types.Identifier.check(f.captured.fn),
-    transform: '{{fn}}(...{{args}})',
+
+    transform: (t, f) => {
+      if (!f.types.Identifier.check(f.captured.fn)) {
+        return
+      }
+      t.replace('{{fn}}(...{{args}})')
+    },
   }, {
     capture  : '{{obj}}.{{fn}}.apply({{obj}}, {{args}})',
-    filter: (f) => !f.contains(f.captured.obj, '{{x}}()'),
-    transform: '{{obj}}.{{fn}}(...{{args}})',
+
+    transform: (t, f) => {
+      if (f.contains(f.captured.obj, '{{x}}()')) {
+        return
+      }
+      t.replace('{{obj}}.{{fn}}(...{{args}})')
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)

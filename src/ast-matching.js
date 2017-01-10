@@ -2,7 +2,9 @@ const types = require('recast/lib/types')
 const { namedTypes } = types
 const { preOrderSubtree, preOrderTwo } = require('./ast-traverse')
 
-function findMatchInSubTree(ast, subtree, captureTrees, callback) {
+const emptyFn = () => {}
+
+function findMatchesInSubTree(ast, subtree, captureTrees, callback) {
   let startOver = true
 
   function matchingVisitor(path) {
@@ -17,6 +19,7 @@ function findMatchInSubTree(ast, subtree, captureTrees, callback) {
           // ==> start over and cancel the current traversal.
           startOver = true
           return false
+          // Comment the above 2 lines if you want no re-traversals.
         }
         // The callback can also return false to indicate that it doesn't want
         // any more matches.
@@ -35,41 +38,52 @@ function findMatchInSubTree(ast, subtree, captureTrees, callback) {
 
 function hasMatchesInSubtree(ast, subtree, matchTree) {
   let matchFound = false
-  findMatchInSubTree(ast, subtree, [matchTree], () => {
-    matchFound = true
-    return false
+  preOrderSubtree(ast, subtree, function matchingVisitor(path) {
+    if (compare(path.value, matchTree)) {
+      matchFound = true
+      this.abort()
+    }
   })
   return matchFound
 }
 
 /**
- * Compares a `path` with a `subtree` and returns the result. If they match,
- * it returns an object containing all captured nodes. If no match, returns false.
- *
- * This implementation is iterative (using a queue) to avoid deep recursive calls.
+ * Compares a `tree` with a `captureTree` and returns either the captured info or false if the
+ * comparison fails.
  */
-function compareAndCapture(ast, captureTree) {
-  // TODO: [optimization] bail out as fast as possible
-  let captured = {}
+function compareAndCapture(tree, captureTree) {
+  const captured = {}
+  const equal = compare(tree, captureTree, function onCapture(captureNode, matchingNode) {
+    captured[captureNode.name] = matchingNode
+  })
+  return equal && captured
+}
 
-  function compareAndCaptureVisitor(path1, path2) {
+/**
+ * Compares a `tree` with a `captureTree` and returns a boolean. Whenever a capture node is found,
+ * the `onCapture` callback will be called with capture node and the matching node from `tree`.
+ */
+function compare(tree, captureTree, onCapture = emptyFn) {
+  // TODO: [optimization] bail out as fast as possible
+  let equal = true
+
+  preOrderTwo(tree, captureTree, function compareVisitor(path1, path2) {
     const [val1, val2] = [path1.value, path2.value]
     if (namedTypes.Capture.check(val2)) {
       // TODO: if 2 captures have the same name, we should check if they are equal.
-      captured[val2.name] = val1
+      onCapture(val2, val1)
       // Tell the traverser to skip the children of current node.
       return false
     }
     if (val1 === null || val2 === null || typeof val1 !== 'object' || typeof val2 !== 'object') {
       if (val1 != val2) {
-        captured = false
+        equal = false
         this.abort()
       }
     }
-  }
+  })
 
-  preOrderTwo(ast, captureTree, compareAndCaptureVisitor)
-  return captured
+  return equal
 }
 
-module.exports = { findMatchInSubTree, hasMatchesInSubtree }
+module.exports = { findMatchesInSubTree, hasMatchesInSubtree }

@@ -56,8 +56,8 @@ function preOrderTwo(ast1, ast2, callback) {
           queue.push([path1.get(key), path2.get(key)])
         }
       }
-      getKeys(path1.value).forEach(appendChildrenPair)
-      getKeys(path2.value).forEach(appendChildrenPair)
+      getChildKeys(path1.value).forEach(appendChildrenPair)
+      getChildKeys(path2.value).forEach(appendChildrenPair)
     }
   }
 }
@@ -77,29 +77,33 @@ function preOrderType(ast, type, callback) {
  * Pre-order (breadth-first) traversal of a subtree inside an AST.
  */
 function preOrderSubtree(ast, subtree, callback) {
-  const subtreePath = findSubtreePath(ast, subtree)
-  preOrderType(subtreePath, 'Node', callback)
+  const path = getNodePath(ast, subtree)
+  preOrderType(path, 'Node', callback)
 }
 
 /**
  * Get the path of a `subtree` inside an AST.
  */
-function findSubtreePath(ast, subtree) {
-  let subtreePath
+function getNodePath(ast, node) {
+  if (node instanceof NodePath) {
+    return node
+  }
+
+  let nodePath
   preOrder(ast, function findSubtreePathVisitor(path) {
-    if (path.value === subtree) {
-      subtreePath = path
+    if (path.value === node) {
+      nodePath = path
       this.abort()
     }
   })
-  return subtreePath
+  return nodePath
 }
 
 /**
  * Get keys for children of a value in an AST. The "value" could be anything
  * inside the AST (e.g. node, array, etc).
  */
-function getKeys(value) {
+function getChildKeys(value) {
   if (!value || typeof value !== 'object') {
     return []
   }
@@ -112,4 +116,8 @@ function getKeys(value) {
 }
 
 
-module.exports = { preOrder, preOrderTwo, preOrderType, preOrderSubtree }
+module.exports = {
+  preOrder, preOrderTwo, preOrderType, preOrderSubtree,
+  getNodePath,
+  getChildKeys,
+}

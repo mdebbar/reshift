@@ -27,13 +27,17 @@ test('check if function has reference to `this`', () => {
 
   const shifters = [{
     capture: '(function( {{...params}}) { {{...body}} })',
-    filter: (f) => f.contains('this'),
-    transform: (t) =>
-      t.replace('( {{...params}}) => { {{...body}} }')
+
+    transform: (t, f) => {
+      if (!f.contains('this')) {
+        return
+      }
+      return t.replace('( {{...params}}) => { {{...body}} }')
       .chain(t.captured.body, [{
         capture: 'this',
         transform: '_that',
-      }]),
+      }])
+    }
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
@@ -54,12 +58,20 @@ test('handle `arguments` when converting to arrow functions', () => {
 
   const shifters = [{
     capture: '(function( {{...params}} ) { {{...body}} })',
-    filter: (f) => !f.contains('arguments'),
-    transform: '( {{...params}} ) => { {{...body}} }',
+
+    transform: (t, f) => {
+      if (f.contains('arguments')) {
+        return
+      }
+      t.replace('( {{...params}} ) => { {{...body}} }')
+    },
   }, {
     capture: '(function( {{...params}} ) { {{...body}} })',
-    filter: (f) => f.contains('arguments'),
-    transform: (t) => {
+
+    transform: (t, f) => {
+      if (!f.contains('arguments')) {
+        return
+      }
       t.captured.params.push(t.build('...rest'))
       t.captured.body.unshift(t.build('const args = [{{...params}}]'))
       t.replace('( {{...params}} ) => { {{...body}} }')

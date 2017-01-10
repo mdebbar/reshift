@@ -1,5 +1,4 @@
 require('../test-helpers/expect-code-equality')
-const { namedTypes } = require('recast/lib/types')
 const { reShift } = require('..')
 
 test('pre-calculate additions', () => {
@@ -16,12 +15,22 @@ test('pre-calculate additions', () => {
 
   const shifters = [{
     capture: '{{x}} + {{y}}',
-    filter: filter,
-    transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`${t.captured.x.value + t.captured.y.value}`)
+    },
   }, {
     capture: '{{extra}} + {{x}} + {{y}}',
-    filter: filter,
-    transform: (t) => t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`),
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`{{extra}} + ${t.captured.x.value + t.captured.y.value}`)
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
@@ -41,20 +50,40 @@ test('pre-calculate additions/subtractions/multiplication/division', () => {
 
   const shifters = [{
     capture: '{{x}} + {{y}}',
-    transform: (t) => t.replace(`${t.captured.x.value + t.captured.y.value}`),
-    filter: filter,
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`${t.captured.x.value + t.captured.y.value}`)
+    },
   }, {
     capture: '{{x}} - {{y}}',
-    transform: (t) => t.replace(`${t.captured.x.value - t.captured.y.value}`),
-    filter: filter,
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`${t.captured.x.value - t.captured.y.value}`)
+    },
   }, {
     capture: '{{x}} * {{y}}',
-    transform: (t) => t.replace(`${t.captured.x.value * t.captured.y.value}`),
-    filter: filter,
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`${t.captured.x.value * t.captured.y.value}`)
+    },
   }, {
     capture: '{{x}} / {{y}}',
-    transform: (t) => t.replace(`${t.captured.x.value / t.captured.y.value}`),
-    filter: filter,
+
+    transform: (t, f) => {
+      if (!filter(f)) {
+        return
+      }
+      return t.replace(`${t.captured.x.value / t.captured.y.value}`)
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
@@ -70,10 +99,13 @@ test('pre-calculate string concatenations', () => {
 
   const shifters = [{
     capture: '{{x}} + {{y}}',
-    transform: (t) => t.replace(`('${t.captured.x.value + t.captured.y.value}')`),
-    filter: (f) =>
-      f.types.StringLiteral.check(f.captured.x) &&
-      f.types.StringLiteral.check(f.captured.y),
+
+    transform: (t, f) => {
+      if (!f.types.StringLiteral.check(f.captured.x) || !f.types.StringLiteral.check(f.captured.y)) {
+        return
+      }
+      return t.replace(`('${t.captured.x.value + t.captured.y.value}')`)
+    },
   }]
   const transformed = reShift(code, shifters)
   expect(transformed).toEqualCode(expected)
